@@ -1,0 +1,23 @@
+{% extends 'base.html' %}
+{% block content %}
+<h1>Customers</h1>
+<a href="{% url 'customers:create' %}">Add Customer</a>
+<table>
+  <tr><th>Name</th><th>Phone</th><th>Loyalty Points</th><th>Total Spend</th><th>Last Purchase</th><th>Actions</th></tr>
+  {% for customer in customers %}
+  <tr>
+    <td>{{ customer.name }}</td>
+    <td>{{ customer.phone }}</td>
+    <td>{{ customer.loyalty_points }}</td>
+    <td>{{ customer.total_spend|default:0 }}</td>
+    <td>{{ customer.last_purchase|date:"Y-m-d" }}</td>
+    <td>
+      <a href="{% url 'customers:edit' customer.pk %}">Edit</a> |
+      <a href="{% url 'customers:loyalty' customer.pk %}">Adjust Loyalty</a>
+    </td>
+  </tr>
+  {% empty %}
+  <tr><td colspan="6">No customers yet.</td></tr>
+  {% endfor %}
+</table>
+{% endblock %}

@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+  <h2>
+    {% if milk_yield %}
+      Add Test for Yield {{ milk_yield.id }} (Cow {% if milk_yield.cow.name %}{{ milk_yield.cow.name }}{% else %}{{ milk_yield.cow.cow_id }}{% endif %})
+    {% else %}
+      Add Milk Test
+    {% endif %}
+  </h2>
+
+  <p>
+    Cow: {% if milk_yield.cow.name %}{{ milk_yield.cow.name }} ({{ milk_yield.cow.cow_id }}){% else %}{{ milk_yield.cow.cow_id }}{% endif %}<br>
+    Date Collected: {{ milk_yield.recorded_at|date:"Y-m-d" }} <br>
+    Time Collected: {{ milk_yield.recorded_at|date:"H:i" }} <br>
+    Litres: {{ milk_yield.yield_litres }}
+  </p>
+
+  <hr>
+
+  <form method="post" class="form">
+    {% csrf_token %}
+    {{ form.as_p }}
+
+    <button type="submit" class="btn btn-primary">Save Test</button>
+    <a href="{% url 'lab:milk_yield_tests' yield_id=milk_yield.id %}" class="btn btn-secondary">Cancel</a>
+  </form>
+</div>
+{% endblock %}

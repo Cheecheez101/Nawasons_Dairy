@@ -1,0 +1,21 @@
+{% extends 'base.html' %}
+{% block content %}
+<h1>Sales Dashboard</h1>
+<a href="{% url 'sales:create' %}">Record Sale</a>
+<table>
+  <tr><th>ID</th><th>Customer</th><th>Total</th><th>Status</th><th>Date</th><th>Receipt</th></tr>
+  {% for tx in transactions %}
+  <tr>
+    <td>{{ tx.transaction_id }}</td>
+    <td>{{ tx.customer_name }}</td>
+    <td>{{ tx.total_amount }}</td>
+    <td>{{ tx.get_payment_status_display }}</td>
+    <td>{{ tx.created_at|date:"Y-m-d H:i" }}</td>
+    <td><a href="{% url 'sales:receipt' tx.id %}" target="_blank">Receipt</a></td>
+  </tr>
+  {% empty %}
+  <tr><td colspan="6">No sales yet.</td></tr>
+  {% endfor %}
+</table>
+{% endblock %}
+

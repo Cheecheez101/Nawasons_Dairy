@@ -1,0 +1,99 @@
+{% extends 'base.html' %}
+{% block content %}
+<h1>Inventory Dashboard</h1>
+
+<section>
+  <h2>Tank Overview</h2>
+  <table class="table table-striped">
+    <tr><th>Tank</th><th>Volume (L)</th><th>Capacity (L)</th><th>Fill %</th></tr>
+    {% for tank in tank_rows %}
+    <tr>
+      <td>{{ tank.name }}</td>
+      <td>{{ tank.volume }}</td>
+      <td>{{ tank.capacity }}</td>
+      <td>{{ tank.percent }}%</td>
+    </tr>
+    {% endfor %}
+  </table>
+</section>
+
+<section>
+  <h2>Lab Approvals</h2>
+  <table class="table table-bordered">
+    <tr><th>Batch</th><th>Status</th><th>Expiry Date</th></tr>
+    {% for approval in approvals %}
+      <tr>
+        <td>{{ approval.production_batch }}</td>
+        <td>
+          {% if approval.overall_result == "approved" %}
+            <span class="badge bg-success">Approved</span>
+          {% elif approval.overall_result == "rejected" %}
+            <span class="badge bg-danger">Rejected</span>
+          {% else %}
+            <span class="badge bg-warning">Pending</span>
+          {% endif %}
+        </td>
+        <td>
+          {% if approval.expiry_date %}
+            {{ approval.expiry_date }}
+          {% else %}
+            <span class="text-muted">Not set</span>
+          {% endif %}
+        </td>
+      </tr>
+    {% empty %}
+      <tr><td colspan="3">No approvals yet.</td></tr>
+    {% endfor %}
+  </table>
+</section>
+
+
+<section>
+  <h2>Low Stock Alerts</h2>
+  <ul>
+    {% for item in low_stock_items %}
+      <li>
+        {{ item.name }} ({{ item.sku }}) - {{ item.current_quantity }} {{ item.unit }} remaining
+        <a href="{% url 'suppliers:create_order' item.id %}">Order from supplier</a>
+      </li>
+    {% empty %}
+      <li>All items above threshold.</li>
+    {% endfor %}
+  </ul>
+</section>
+
+<section>
+  <h2>All Items</h2>
+  <table class="table table-hover">
+    <tr><th>Name</th><th>SKU</th><th>Quantity</th><th>Reorder Threshold</th></tr>
+    {% for item in items %}
+    <tr>
+      <td>{{ item.name }}</td>
+      <td>{{ item.sku }}</td>
+      <td>{{ item.current_quantity }} {{ item.unit }}</td>
+      <td>{{ item.reorder_threshold }} {{ item.unit }}</td>
+    </tr>
+    {% empty %}
+    <tr><td colspan="4">No inventory items yet.</td></tr>
+    {% endfor %}
+  </table>
+</section>
+
+<section>
+  <h2>Processed Product Snapshot</h2>
+  <table class="table table-striped">
+    <tr><th>Category</th><th>Brand</th><th>Flavor</th><th>Size (ml)</th><th>Stock</th></tr>
+    {% for item in processed_items %}
+    <tr>
+      <td>{{ item.get_product_category_display }}</td>
+      <td>{{ item.brand|default:'-' }}</td>
+      <td>{{ item.flavor|default:'-' }}</td>
+      <td>{{ item.size_ml|default:'-' }}</td>
+      <td>{{ item.current_quantity }} {{ item.unit }}</td>
+    </tr>
+    {% empty %}
+    <tr><td colspan="5">No processed inventory recorded yet.</td></tr>
+    {% endfor %}
+  </table>
+</section>
+{% endblock %}

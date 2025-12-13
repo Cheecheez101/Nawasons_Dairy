@@ -1,0 +1,18 @@
+{% extends 'base.html' %}
+{% block content %}
+<h1>Create Supplier Order for {{ item.name }}</h1>
+<form method="post">
+  {% csrf_token %}
+  <label>Supplier</label>
+  <select name="supplier_id" required>
+    {% for supplier in suppliers %}
+      <option value="{{ supplier.id }}">{{ supplier.name }}</option>
+    {% endfor %}
+  </select>
+  <label>Expected Delivery</label>
+  <input type="date" name="expected_delivery" required>
+  <p>Quantity: {{ item.reorder_quantity|default:item.reorder_threshold }}</p>
+  <button type="submit">Create Order</button>
+</form>
+{% endblock %}
+

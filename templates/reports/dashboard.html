@@ -1,0 +1,16 @@
+{% extends 'base.html' %}
+{% block content %}
+<h1>Reports Dashboard</h1>
+<form method="get">
+  <label>Start Date</label>
+  <input type="date" name="start_date" value="{{ start_date }}">
+  <label>End Date</label>
+  <input type="date" name="end_date" value="{{ end_date }}">
+  <button type="submit">Filter</button>
+</form>
+<ul>
+  <li>Total Milk Production: {{ production_total }} L</li>
+  <li>Total Inventory Stock: {{ inventory_total }}</li>
+  <li>Total Sales Amount: {{ sales_total }}</li>
+</ul>
+{% endblock %}

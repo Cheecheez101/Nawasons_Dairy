@@ -1,0 +1,42 @@
+{% extends 'base.html' %}
+{% block content %}
+<h1>Product Prices</h1>
+<div>
+  {% if perms.production.add_productprice %}
+    <a href="{% url 'production:price_create' %}">Add Price</a>
+  {% endif %}
+</div>
+<table>
+  <thead>
+    <tr>
+      <th>SKU</th>
+      <th>Product</th>
+      <th>Price</th>
+      <th>Last Updated</th>
+      <th>Updated By</th>
+      <th>Actions</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for price in prices %}
+      <tr>
+        <td>{{ price.sku }}</td>
+        <td>{{ price.product_name }}</td>
+        <td>{{ price.price }}</td>
+        <td>{{ price.last_updated|date:"Y-m-d H:i" }}</td>
+        <td>{{ price.updated_by }}</td>
+        <td>
+          {% if perms.production.change_productprice %}
+            <a href="{% url 'production:price_update' price.pk %}">Edit</a>
+          {% endif %}
+        </td>
+      </tr>
+    {% empty %}
+      <tr>
+        <td colspan="6">No product prices configured.</td>
+      </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endblock %}
+

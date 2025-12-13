@@ -1,0 +1,19 @@
+{% extends 'base.html' %}
+{% block content %}
+<h1>Receipt #{{ transaction.transaction_id }}</h1>
+<p><strong>Customer:</strong> {{ transaction.customer_name }} ({{ transaction.customer_phone }})</p>
+<p><strong>Status:</strong> {{ transaction.get_payment_status_display }}</p>
+<p><strong>Date:</strong> {{ transaction.created_at|date:"Y-m-d H:i" }}</p>
+<table>
+  <tr><th>Item</th><th>Quantity</th><th>Unit Price</th><th>Total</th></tr>
+  {% for item in transaction.items.all %}
+  <tr>
+    <td>{{ item.inventory_item.name }}</td>
+    <td>{{ item.quantity }}</td>
+    <td>{{ item.price_per_unit }}</td>
+    <td>{{ item.line_total }}</td>
+  </tr>
+  {% endfor %}
+</table>
+<p><strong>Grand Total:</strong> {{ transaction.total_amount }}</p>
+{% endblock %}

@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+  <div class="row">
+    <!-- Sidebar with lab actions -->
+    <div class="col-md-3">
+      <h4>Lab Actions</h4>
+      <div class="list-group mb-3">
+        {% if perms.lab.add_rawmilktest %}
+          <a class="list-group-item list-group-item-action"
+             href="{% url 'lab:add_raw_test' yield_id=milk_yield.id %}">
+             ➕ Add Raw Test
+          </a>
+        {% endif %}
+
+        {% if perms.lab.add_tankbatchtest %}
+          <a class="list-group-item list-group-item-action"
+             href="{% url 'lab:add_tank_test' yield_id=milk_yield.id %}">
+             🧪 Add Tank Test
+          </a>
+        {% endif %}
+
+        {% if perms.lab.add_labbatchapproval %}
+          {% for batch in milk_yield.production_batches.all %}
+            <a class="list-group-item list-group-item-action"
+               href="{% url 'lab:approve_batch' batch_id=batch.id %}">
+               ✅ Approve Batch {{ batch.id }}
+            </a>
+          {% endfor %}
+        {% endif %}
+
+        {% if perms.lab.view_rawmilktest %}
+          <a class="list-group-item list-group-item-action"
+             href="{% url 'lab:milk_yield_tests' yield_id=milk_yield.id %}">
+             📊 View Tests
+          </a>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Main content -->
+    <div class="col-md-9">
+      <h2>Milk Yield Tests for Cow {{ milk_yield.cow.tag_number }}</h2>
+      <p>Date: {{ milk_yield.date_collected }} | Litres: {{ milk_yield.litres }}</p>
+
+      <hr>
+
+      <!-- Raw Milk Test -->
+      <h3>Raw Milk Test</h3>
+      {% if raw_tests %}
+        <p>Result: {{ raw_tests.result }} | Tested by: {{ raw_tests.tested_by }}</p>
+      {% else %}
+        <p>No raw milk test recorded.</p>
+      {% endif %}
+
+      <hr>
+
+      <!-- Tank Batch Tests -->
+      <h3>Tank Batch Tests</h3>
+      {% if tank_tests %}
+        <ul>
+          {% for test in tank_tests %}
+            <li>{{ test.result }} | {{ test.tested_by }} | {{ test.tested_at }}</li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <p>No tank batch tests recorded.</p>
+      {% endif %}
+
+      <hr>
+
+      <!-- Batch Approvals -->
+      <h3>Batch Approvals</h3>
+      {% if approvals %}
+        <ul>
+          {% for approval in approvals %}
+            <li>
+              Result: {{ approval.overall_result }} |
+              Expiry: {{ approval.expiry_date }} |
+              Approved by: {{ approval.approved_by }}
+            </li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <p>No approvals yet.</p>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

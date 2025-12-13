@@ -1,0 +1,25 @@
+{% extends 'base.html' %}
+{% block content %}
+<h1>Record Sale</h1>
+<form method="post">
+  {% csrf_token %}
+  {{ form.as_p }}
+  {{ formset.management_form }}
+  {% for form in formset %}
+    <fieldset>
+      <legend>Item {{ forloop.counter }}</legend>
+      {{ form.inventory_item.label_tag }} {{ form.inventory_item }}
+      {{ form.quantity.label_tag }} {{ form.quantity }}
+    </fieldset>
+  {% endfor %}
+  <button type="submit">Save</button>
+</form>
+<section>
+  <h2>Add Customer</h2>
+  <form method="post">
+    {% csrf_token %}
+    {{ customer_form.as_p }}
+    <button type="submit" name="add_customer">Add Customer</button>
+  </form>
+</section>
+{% endblock %}

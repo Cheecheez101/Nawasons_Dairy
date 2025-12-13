@@ -1,0 +1,29 @@
+{% extends 'base.html' %}
+{% block content %}
+<h1>Supplier Orders</h1>
+<table>
+  <tr><th>Supplier</th><th>Item</th><th>Qty</th><th>Status</th><th>Expected</th><th>Actions</th></tr>
+  {% for order in orders %}
+  <tr>
+    <td>{{ order.supplier.name }}</td>
+    <td>{{ order.inventory_item.name }}</td>
+    <td>{{ order.quantity }}</td>
+    <td>{{ order.get_status_display }}</td>
+    <td>{{ order.expected_delivery }}</td>
+    <td>
+      <form method="post" action="{% url 'suppliers:update_order' order.pk %}">
+        {% csrf_token %}
+        <select name="status">
+          <option value="pending" {% if order.status == 'pending' %}selected{% endif %}>Pending</option>
+          <option value="delivered" {% if order.status == 'delivered' %}selected{% endif %}>Delivered</option>
+        </select>
+        <button type="submit">Update</button>
+      </form>
+    </td>
+  </tr>
+  {% empty %}
+  <tr><td colspan="6">No supplier orders yet.</td></tr>
+  {% endfor %}
+</table>
+{% endblock %}
+

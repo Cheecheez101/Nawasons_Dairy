@@ -1,0 +1,207 @@
+<!-- language: html -->
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+  <h2 class="mb-3">Lab Dashboard</h2>
+  <p class="text-muted">Monitor milk yields, lab tests, and batch approvals.</p>
+
+  <!-- Quick summary -->
+  <div class="row mb-3">
+    <div class="col">
+      <div class="alert alert-info">
+        Total Yields: {{ yields|length }}
+      </div>
+    </div>
+    <div class="col">
+      <div class="alert alert-warning">
+        Pending Approvals: {{ pending_approvals|default:0 }}
+      </div>
+    </div>
+    <div class="col">
+      <div class="alert alert-danger">
+        Near Expiry: {{ near_expiry|default:0 }}
+      </div>
+    </div>
+  </div>
+
+  <!-- Tanks summary with create test action -->
+  <h3 class="mb-3">Tanks Summary</h3>
+  <p class="text-muted">See pooled tank quantities and create tank-level tests.</p>
+  <table class="table table-bordered table-hover mb-4">
+    <thead class="table-light">
+      <tr>
+        <th>Tank</th>
+        <th>Total Litres</th>
+        <th>Yields</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for t in tanks_summary %}
+      <tr>
+        <td>{{ t.storage_tank }}</td>
+        <td>{{ t.total_litres }}</td>
+        <td>{{ t.yields_count }}</td>
+        <td>
+          {% if perms.lab.add_tankbatchtest %}
+            <a class="btn btn-primary btn-sm" href="{% url 'lab:create_tank_test' tank=t.storage_tank %}">➕ Create Tank Test</a>
+          {% endif %}
+          {% if perms.lab.view_rawmilktest and t.total_litres > 0 %}
+            <a class="btn btn-success btn-sm" href="{% url 'production:batch_form' %}?tank={{ t.storage_tank }}">🧾 Create Batch</a>
+          {% endif %}
+        </td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="4" class="text-center">No tank summaries available.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <!-- Yield table (clerk / per-cow yields). Tank test link removed. -->
+  <table class="table table-bordered table-hover mb-4">
+    <thead class="table-light">
+      <tr>
+        <th>Cow</th>
+        <th>Date Collected</th>
+        <th>Litres</th>
+        <th>Source Tank</th>
+        <th>Status</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for yield in yields %}
+      <tr class="{% if yield.is_expired %}table-danger{% elif yield.is_near_expiry %}table-warning{% endif %}">
+        <td>{{ yield.cow.name }}</td>
+        <td>{{ yield.recorded_at|date:"Y-m-d H:i" }}</td>
+        <td>{{ yield.yield_litres }}</td>
+        <td>{{ yield.storage_tank }}</td>
+        <td>
+          {% if yield.is_expired %}
+            <span class="badge bg-danger">Expired</span>
+          {% elif yield.is_near_expiry %}
+            <span class="badge bg-warning">Near Expiry</span>
+          {% else %}
+            <span class="badge bg-success">Valid</span>
+          {% endif %}
+        </td>
+        <td>
+          <!-- View Tests -->
+          {% if perms.lab.view_rawmilktest %}
+            <a class="btn btn-info btn-sm"
+               href="{% url 'lab:milk_yield_tests' yield_id=yield.id %}">
+               📊 View Tests
+            </a>
+          {% endif %}
+
+          <!-- Add Raw Test -->
+          {% if perms.lab.add_rawmilktest %}
+            <a class="btn btn-primary btn-sm"
+               href="{% url 'lab:add_raw_test' yield_id=yield.id %}">
+               ➕ Raw Test
+            </a>
+          {% endif %}
+
+          <!-- Production batch links for already approved yields (keeps context) -->
+          {% if yield.raw_test_approved and yield.storage_tank and yield.storage_tank != "Spoilt Tank" %}
+            <a class="btn btn-success btn-sm"
+               href="{% url 'production:batch_form' %}?tank={{ yield.id }}">
+               🧾 Create Batch
+            </a>
+          {% endif %}
+        </td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="6" class="text-center">No milk yields recorded yet.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <!-- Tank-level tests (separate table for lab users to approve/reject tanks) -->
+  <h3 class="mb-3">Tank Tests</h3>
+  <p class="text-muted">Lab users review and approve/reject milk that has been pooled into tanks.</p>
+  <table class="table table-bordered table-hover mb-4">
+    <thead class="table-light">
+      <tr>
+        <th>Tank</th>
+        <th>Source Yield / Cow</th>
+        <th>Date</th>
+        <th>Litres</th>
+        <th>Test Result</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for test in tank_tests %}
+      {% with y=test.milk_yield %}
+      <tr>
+        <td>{{ y.storage_tank }}</td>
+        <td>{{ y.cow.name }} ({{ y.cow.cow_id }})</td>
+        <td>{{ y.recorded_at|date:"Y-m-d" }}</td>
+        <td>{{ y.yield_litres }}</td>
+        <td>
+          {% if test.result == "approved" %}
+            <span class="badge bg-success">Approved</span>
+          {% elif test.result == "rejected" %}
+            <span class="badge bg-danger">Rejected</span>
+          {% else %}
+            <span class="badge bg-secondary">Pending</span>
+          {% endif %}
+        </td>
+        <td>
+          {% if perms.lab.change_tankbatchtest %}
+            <a class="btn btn-success btn-sm"
+               href="{% url 'lab:approve_tank_test' test_id=test.id action='approve' %}">
+               ✅ Approve
+            </a>
+            <a class="btn btn-danger btn-sm"
+               href="{% url 'lab:approve_tank_test' test_id=test.id action='reject' %}">
+               ❌ Reject
+            </a>
+          {% endif %}
+          <a class="btn btn-info btn-sm"
+             href="{% url 'lab:tank_yield_tests' tank=y.storage_tank %}">
+             🔍 View
+          </a>
+        </td>
+      </tr>
+      {% endwith %}
+      {% empty %}
+      <tr><td colspan="6" class="text-center">No tank tests available.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <!-- Approved tanks visible to production for batch creation -->
+  <h3 class="mb-3">Approved Tanks for Production</h3>
+  <p class="text-muted">Production can select a tank and start a batch using approved milk; available SKUs will be selected in the batch form.</p>
+  <table class="table table-bordered table-hover">
+    <thead class="table-light">
+      <tr>
+        <th>Tank</th>
+        <th>Available Litres</th>
+        <th>Status</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for yield in approved_tanks %}
+      <tr>
+        <td>{{ yield.storage_tank }}</td>
+        <td>{{ yield.yield_litres }}</td>
+        <td><span class="badge bg-success">Approved</span></td>
+        <td>
+          <a class="btn btn-primary btn-sm"
+             href="{% url 'production:batch_form' %}?tank={{ yield.id }}">
+             ➕ Create Batch
+          </a>
+        </td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="4" class="text-center">No tanks approved for production.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

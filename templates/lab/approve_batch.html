@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+  <h2>Approve Production Batch</h2>
+
+  <p>
+    <strong>Batch ID:</strong> {{ batch.id }} <br>
+    <strong>Milk Source:</strong> Cow {{ batch.milk_source.cow.tag_number }} (Yield {{ batch.milk_source.id }}) <br>
+    <strong>Litres Processed:</strong> {{ batch.litres }} <br>
+    <strong>Created by:</strong> {{ batch.processed_by }} on {{ batch.created_at }}
+  </p>
+
+  <hr>
+
+  <form method="post" class="form">
+    {% csrf_token %}
+    {{ form.as_p }}
+
+    <button type="submit" class="btn btn-success">Save Approval</button>
+    <a href="{% url 'lab:milk_yield_tests' yield_id=batch.milk_source.id %}" class="btn btn-secondary">Cancel</a>
+  </form>
+
+  <hr>
+
+  {% if batch.lab_approval %}
+    <h4>Existing Approval</h4>
+    <p>
+      Result: {{ batch.lab_approval.overall_result }} <br>
+      Expiry: {{ batch.lab_approval.expiry_date }} <br>
+      Approved by: {{ batch.lab_approval.approved_by }} <br>
+      Remarks: {{ batch.lab_approval.remarks }}
+    </p>
+  {% endif %}
+</div>
+{% endblock %}

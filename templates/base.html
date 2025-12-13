@@ -1,0 +1,85 @@
+{% load static %}
+
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Nawa Sons Dairy</title>
+  <link rel="stylesheet" href="{% static 'css/bootstrap.min.css' %}">
+</head>
+<body>
+  <header>
+    <nav class="navbar navbar-expand-lg navbar-light bg-light">
+      <div class="container-fluid">
+        <a class="navbar-brand" href="/">Nawa Sons Dairy</a>
+        <div class="collapse navbar-collapse">
+          <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+            <li class="nav-item"><a class="nav-link" href="/">Home</a></li>
+
+            {% if user.is_authenticated %}
+              <!-- Production -->
+              {% if perms.production.add_cow %}
+                <li class="nav-item"><a class="nav-link" href="{% url 'production:cow_create' %}">Register Cow</a></li>
+                <li class="nav-item"><a class="nav-link" href="{% url 'production:yield_create' %}">Add Yield</a></li>
+                <li class="nav-item"><a class="nav-link" href="{% url 'production:batch_form' %}">Create Batch</a></li>
+              {% endif %}
+
+              {% if perms.production.approve_milk %}
+                <li class="nav-item"><a class="nav-link" href="{% url 'production:cow_list' %}">Milk Approvals</a></li>
+              {% endif %}
+
+              {% if perms.production.view_productprice %}
+                <li class="nav-item"><a class="nav-link" href="{% url 'production:price_list' %}">Product Prices</a></li>
+              {% endif %}
+
+              <!-- Inventory -->
+              {% if perms.inventory.change_inventoryitem %}
+                <li class="nav-item"><a class="nav-link" href="{% url 'production:cow_list' %}">Production Unit</a></li>
+              {% endif %}
+              {% if perms.inventory.view_inventoryitem %}
+                <li class="nav-item"><a class="nav-link" href="{% url 'inventory:dashboard' %}">Store</a></li>
+              {% endif %}
+
+              <!-- Sales -->
+              {% if perms.sales.add_salestransaction %}
+                <li class="nav-item"><a class="nav-link" href="{% url 'sales:dashboard' %}">Sales</a></li>
+              {% endif %}
+
+              <!-- Customers -->
+              {% if perms.customers.add_customer %}
+                <li class="nav-item"><a class="nav-link" href="{% url 'customers:index' %}">Add Customer</a></li>
+              {% endif %}
+
+              <!-- Reports -->
+              {% if perms.reports.view_report %}
+                <li class="nav-item"><a class="nav-link" href="{% url 'reports:index' %}">Accounts</a></li>
+              {% endif %}
+
+              <!-- Lab -->
+              {% if perms.lab.view_rawmilktest %}
+                <li class="nav-item"><a class="nav-link" href="{% url 'lab:dashboard' %}">Lab Dashboard</a></li>
+              {% endif %}
+
+              <!-- Auth -->
+              <li class="nav-item"><a class="nav-link" href="{% url 'logout' %}">Logout</a></li>
+            {% else %}
+              <li class="nav-item"><a class="nav-link" href="{% url 'login' %}">Login</a></li>
+            {% endif %}
+
+            <li class="nav-item"><a class="nav-link" href="/docs/chapter1/">Documentation</a></li>
+          </ul>
+        </div>
+      </div>
+    </nav>
+  </header>
+
+  <main class="container mt-4">
+    {% block content %}{% endblock %}
+  </main>
+
+  <footer class="text-center mt-4">
+    <p>&copy; Nawa Sons Dairy</p>
+  </footer>
+</body>
+</html>

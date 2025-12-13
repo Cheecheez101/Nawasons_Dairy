@@ -1,0 +1,57 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+  <h1 class="mb-3">Cow Dashboard</h1>
+
+  <!-- Quick actions -->
+  <div class="mb-3">
+    <a class="btn btn-primary" href="{% url 'production:cow_create' %}">➕ Register Cow</a>
+    <a class="btn btn-secondary" href="{% url 'production:yield_create' %}">🍼 Record New Yield</a>
+  </div>
+
+  <!-- Cow table -->
+  <table class="table table-striped">
+    <thead>
+      <tr>
+        <th>Cow Name</th>
+        <th>Breed</th>
+        <th>Health</th>
+        <th>Latest Yield (L)</th>
+        <th>Lab Tests</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for cow in cows %}
+      <tr class="{% if cow.latest_yield and cow.latest_yield.storage_level_percentage > 90 %}table-warning{% endif %}">
+        <td>{{ cow.name}}</td>
+        <td>{{ cow.breed }}</td>
+        <td>{{ cow.get_health_status_display }}</td>
+        <td>
+          {% if cow.latest_yield %}
+            {{ cow.latest_yield.total_yield }} L
+            (Storage {{ cow.latest_yield.storage_level_percentage }}%)
+          {% else %}
+            -
+          {% endif %}
+        </td>
+        <td>
+          {% if cow.latest_yield %}
+            {% if perms.lab.view_rawmilktest %}
+              <a class="btn btn-info btn-sm"
+                 href="{% url 'lab:milk_yield_tests' yield_id=cow.latest_yield.id %}">
+                 📊 View Tests
+              </a>
+            {% endif %}
+          {% else %}
+            <span class="text-muted">No yield yet</span>
+          {% endif %}
+        </td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="5">No cows registered yet.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

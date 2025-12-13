@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+  <h2>All Milk Yield Tests for Tank: {{ tank }}</h2>
+  <table class="table table-bordered table-hover">
+    <thead class="table-light">
+      <tr>
+        <th>Date Collected</th>
+        <th>Cow</th>
+        <th>Session</th>
+        <th>Litres</th>
+        <th>Raw Test</th>
+        <th>Tank Tests</th>
+        <th>Approvals</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for yield in yields %}
+      <tr>
+        <td>{{ yield.recorded_at|date:"Y-m-d H:i" }}</td>
+        <td>{{ yield.cow.name }}</td>
+        <td>{{ yield.session }}</td>
+        <td>{{ yield.yield_litres }}</td>
+        <td>
+          {% if yield.raw_test %}
+            {{ yield.raw_test.result }} ({{ yield.raw_test.tested_by }})
+          {% else %}
+            <span class="text-muted">No test</span>
+          {% endif %}
+        </td>
+        <td>
+          {% for test in yield.tank_tests.all %}
+            {{ test.result }} ({{ test.tested_by }})<br>
+          {% empty %}
+            <span class="text-muted">No tests</span>
+          {% endfor %}
+        </td>
+        <td>
+          {% for batch in yield.production_batches.all %}
+            {% if batch.lab_approval %}
+              {{ batch.lab_approval.overall_result }} ({{ batch.lab_approval.approved_by }})<br>
+            {% endif %}
+          {% empty %}
+            <span class="text-muted">No approvals</span>
+          {% endfor %}
+        </td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="7" class="text-center">No yields found for this tank.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}
+
