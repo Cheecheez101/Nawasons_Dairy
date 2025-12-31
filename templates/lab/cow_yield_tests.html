@@ -11,7 +11,6 @@
         <th>Litres</th>
         <th>Raw Test</th>
         <th>Tank Tests</th>
-        <th>Approvals</th>
       </tr>
     </thead>
     <tbody>
@@ -34,21 +33,11 @@
             <span class="text-muted">No tests</span>
           {% endfor %}
         </td>
-        <td>
-          {% for batch in yield.production_batches.all %}
-            {% if batch.lab_approval %}
-              {{ batch.lab_approval.overall_result }} ({{ batch.lab_approval.approved_by }})<br>
-            {% endif %}
-          {% empty %}
-            <span class="text-muted">No approvals</span>
-          {% endfor %}
-        </td>
       </tr>
       {% empty %}
-      <tr><td colspan="6" class="text-center">No yields found for this cow.</td></tr>
+      <tr><td colspan="5" class="text-center">No yields found for this cow.</td></tr>
       {% endfor %}
     </tbody>
   </table>
 </div>
 {% endblock %}
-

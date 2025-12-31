@@ -101,35 +101,16 @@ class ProductPriceUpdateView(LoginRequiredMixin, PermissionRequiredMixin, View):
         return render(request, 'production/price_form.html', {'form': form, 'price': price})
 
 
-# Function-based view for batch creation with optional preselected tank
-def batch_form(request):
-    initial = {}
-    preselect = request.GET.get('tank')
-    if preselect:
-        # If preselect looks like an integer, try to treat it as a MilkYield PK
-        try:
-            pk = int(preselect)
-        except (TypeError, ValueError):
-            pk = None
+class ProductionBatchListView(LoginRequiredMixin, PermissionRequiredMixin, View):
+    permission_required = 'production.view_productionbatch'
 
-        if pk:
-            try:
-                initial['milk_source'] = MilkYield.objects.get(pk=pk)
-            except MilkYield.DoesNotExist:
-                pass
-        else:
-            # treat preselect as a storage_tank name; pick the first approved yield in that tank
-            try:
-                my = (
-                    MilkYield.objects.filter(storage_tank=preselect, raw_test_approved=True)
-                    .order_by('recorded_at')
-                    .first()
-                )
-                if my:
-                    initial['milk_source'] = my
-            except Exception:
-                pass
-    if request.method == "POST":
+    def get(self, request):
+        batches = ProductionBatch.objects.select_related('processed_by').order_by('-produced_at')
+        return render(request, 'production/batch_list.html', {'batches': batches})
+
+
+def batch_form(request):
+    if request.method == 'POST':
         form = ProductionBatchForm(request.POST)
         if form.is_valid():
             batch = form.save(commit=False)
@@ -138,9 +119,9 @@ def batch_form(request):
                 batch.consume_milk()
                 batch.save()
                 messages.success(request, "Production batch created successfully. Milk deducted from tank.")
-                return redirect('lab:milk_yield_tests', yield_id=batch.milk_source.id)
+                return redirect('production:batch_list')
             except Exception as e:
                 messages.error(request, f"Error creating batch: {e}")
     else:
-        form = ProductionBatchForm(initial=initial)
+        form = ProductionBatchForm()
     return render(request, "production/batch_form.html", {"form": form})

@@ -1,4 +1,5 @@
 from django import forms
+from django.db.models import Sum
 from inventory.models import InventoryItem
 from .models import MilkYield, Cow, ProductPrice, ProductionBatch
 
@@ -26,27 +27,23 @@ class MilkYieldForm(forms.ModelForm):
 class CowForm(forms.ModelForm):
     class Meta:
         model = Cow
-        fields = [
-            'cow_id',
-            'name',
-            'breed',
-            'date_of_birth',
-            'health_status',
-            'stall_location',
-            'daily_capacity_litres',
-            'is_active',
-        ]
+        fields = '__all__'
         widgets = {
-            'date_of_birth': forms.DateInput(attrs={'type': 'date'}),
+            'name': forms.TextInput(attrs={'class': 'form-control'}),
+            'breed': forms.TextInput(attrs={'class': 'form-control'}),
+            'age': forms.NumberInput(attrs={'class': 'form-control'}),
+            'health_status': forms.TextInput(attrs={'class': 'form-control'}),
         }
 
 
 class ProductPriceForm(forms.ModelForm):
     class Meta:
         model = ProductPrice
-        fields = ['inventory_item', 'price']
+        fields = '__all__'
         widgets = {
-            'price': forms.NumberInput(attrs={'step': '0.01', 'min': '0'}),
+            'inventory_item': forms.Select(attrs={'class': 'form-control'}),
+            'price': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
+            'effective_date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
         }
 
     def __init__(self, *args, **kwargs):
@@ -69,24 +66,9 @@ class ProductionBatchForm(forms.ModelForm):
     """
     class Meta:
         model = ProductionBatch
-        fields = ['milk_source', 'product_type', 'sku', 'quantity_produced']
+        fields = '__all__'
         widgets = {
-            'quantity_produced': forms.NumberInput(attrs={'step': '0.1', 'min': '0'}),
+            'product': forms.Select(attrs={'class': 'form-control'}),
+            'quantity': forms.NumberInput(attrs={'class': 'form-control'}),
+            'produced_at': forms.DateTimeInput(attrs={'class': 'form-control', 'type': 'datetime-local'}),
         }
-        labels = {
-            'milk_source': "Source Tank (Milk Yield)",
-        }
-        help_texts = {
-            'milk_source': "Select the milk yield (tank) to use as the source for this batch.",
-        }
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        # Only show milk yields that have raw milk approved and are not in Spoilt Tank
-        self.fields['milk_source'].queryset = MilkYield.objects.filter(raw_test_approved=True).exclude(storage_tank='Spoilt Tank').order_by('recorded_at')
-        # Populate SKU choices from current ProductPrice records
-        sku_choices = [('', '--- Select SKU ---')] + [(pp.sku, f"{pp.product_name} ({pp.sku})") for pp in ProductPrice.objects.select_related('inventory_item').order_by('product_name')]
-        self.fields['sku'] = forms.ChoiceField(choices=sku_choices, required=True)
-        # If editing an existing batch, keep sku initial
-        if self.instance and getattr(self.instance, 'sku', None):
-            self.fields['sku'].initial = self.instance.sku

@@ -1,0 +1,76 @@
+/* Custom font stacks for Nawa Sons Dairy
+   - Primary UI font: Roboto (for dashboards, forms, reports)
+   - Secondary UI font: Lato or Open Sans (for headings, sidebar navigation)
+   - Branding font: Dancing Script (free Google Font alternative to Rustic Harvest/Nora Fields for logo, marketing)
+   - Fallbacks: Arial, Helvetica, sans-serif
+
+   Place local font files under static/fonts/ if you want to self-host other fonts.
+*/
+
+/* Optional @font-face for Rustic Harvest (example). If you add RusticHarvest-Regular.woff2 to static/fonts/ uncomment and update paths */
+/*
+@font-face {
+  font-family: 'RusticHarvest';
+  src: url('/static/fonts/RusticHarvest-Regular.woff2') format('woff2'),
+       url('/static/fonts/RusticHarvest-Regular.woff') format('woff');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+*/
+
+/* Optional @font-face for Nora Fields (example)
+@font-face {
+  font-family: 'NoraFields';
+  src: url('/static/fonts/NoraFields-Regular.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+*/
+
+:root {
+  --font-primary: 'Roboto', 'Lato', 'Open Sans', Arial, Helvetica, sans-serif;
+  --font-secondary: 'Lato', 'Open Sans', Arial, Helvetica, sans-serif;
+  --font-brand: 'Dancing Script', cursive;
+}
+
+/* Apply primary UI font to body and core UI elements */
+body, input, textarea, select, button {
+  font-family: var(--font-primary);
+  font-size: 16px;
+  line-height: 1.5;
+  color: #333;
+}
+
+/* Secondary font for headings and navigation */
+h1, h2, h3, h4, h5, h6, .section-header, #sidebar .nav-link, .offcanvas .nav-link {
+  font-family: var(--font-secondary);
+  font-weight: 600;
+}
+
+/* Branding font for logo and marketing elements */
+.branding, .navbar-brand, .brand-heading {
+  font-family: var(--font-brand);
+  font-weight: 400;
+}
+
+/* Utility classes for forcing specific fonts when needed */
+.ui-font {
+  font-family: var(--font-primary);
+}
+
+.secondary-font {
+  font-family: var(--font-secondary);
+}
+
+.brand-font {
+  font-family: var(--font-brand);
+}
+
+/* Responsive scaling with rem */
+h1 { font-size: 2rem; }
+h2 { font-size: 1.75rem; }
+h3 { font-size: 1.5rem; }
+
+/* End of custom fonts file */

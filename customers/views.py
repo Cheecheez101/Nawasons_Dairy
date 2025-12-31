@@ -71,3 +71,15 @@ class LoyaltyExportView(LoginRequiredMixin, PermissionRequiredMixin, View):
         response = HttpResponse('\n'.join(rows), content_type='text/csv')
         response['Content-Disposition'] = f'attachment; filename="loyalty_{customer.pk}.csv"'
         return response
+
+class CustomerDeleteView(LoginRequiredMixin, PermissionRequiredMixin, View):
+    permission_required = 'customers.delete_customer'
+
+    def get(self, request, pk):
+        customer = get_object_or_404(Customer, pk=pk)
+        return render(request, 'customers/confirm_delete.html', {'customer': customer})
+
+    def post(self, request, pk):
+        customer = get_object_or_404(Customer, pk=pk)
+        customer.delete()
+        return redirect('customers:index')

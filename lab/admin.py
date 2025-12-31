@@ -20,4 +20,4 @@ class TankBatchTestAdmin(admin.ModelAdmin):
 class LabBatchApprovalAdmin(admin.ModelAdmin):
     list_display = ("production_batch", "overall_result", "approved_by", "approved_at", "expiry_date")
     list_filter = ("overall_result",)
-    search_fields = ("production_batch__milk_source__cow__cow_id", "remarks")
+    search_fields = ("production_batch__source_tank", "remarks")

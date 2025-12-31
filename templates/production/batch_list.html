@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+
+
+{% block content %}
+<div class="container mt-4">
+  <h2 class="mb-3">Production Batches</h2>
+  <p class="text-muted">List of all production batches created.</p>
+
+  <table class="table table-bordered table-hover">
+    <thead class="table-light">
+      <tr>
+        <th>Batch ID</th>
+        <th>Product Type</th>
+        <th>SKU</th>
+        <th>Source Tank</th>
+        <th>Quantity Produced (L)</th>
+        <th>Units Produced</th>
+        <th>Produced At</th>
+        <th>Processed By</th>
+        <th>Lab Approval</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for batch in batches %}
+<!--      {% with size=batch.sku|split:"-"|slice:"-1"|first|int %}-->
+      <tr>
+        <td>{{ batch.id }}</td>
+        <td>{{ batch.product_type }}</td>
+        <td>{{ batch.sku }}</td>
+        <td>{{ batch.source_tank }}</td>
+        <td>{{ batch.quantity_produced }}</td>
+        <td>{{ (batch.quantity_produced * 1000) / size|int }}</td>
+        <td>{{ batch.produced_at|date:"Y-m-d H:i" }}</td>
+        <td>{{ batch.processed_by }}</td>
+        <td>
+          {% if batch.lab_approval %}
+            {{ batch.lab_approval.overall_result }} ({{ batch.lab_approval.approved_by }})
+          {% else %}
+            <span class="text-muted " >Pending</span>
+          {% endif %}
+        </td>
+      </tr>
+      {% endwith %}
+      {% empty %}
+      <tr><td colspan="9" class="text-center">No batches found.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

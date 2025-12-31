@@ -21,15 +21,6 @@
           </a>
         {% endif %}
 
-        {% if perms.lab.add_labbatchapproval %}
-          {% for batch in milk_yield.production_batches.all %}
-            <a class="list-group-item list-group-item-action"
-               href="{% url 'lab:approve_batch' batch_id=batch.id %}">
-               ✅ Approve Batch {{ batch.id }}
-            </a>
-          {% endfor %}
-        {% endif %}
-
         {% if perms.lab.view_rawmilktest %}
           <a class="list-group-item list-group-item-action"
              href="{% url 'lab:milk_yield_tests' yield_id=milk_yield.id %}">
@@ -66,24 +57,6 @@
         </ul>
       {% else %}
         <p>No tank batch tests recorded.</p>
-      {% endif %}
-
-      <hr>
-
-      <!-- Batch Approvals -->
-      <h3>Batch Approvals</h3>
-      {% if approvals %}
-        <ul>
-          {% for approval in approvals %}
-            <li>
-              Result: {{ approval.overall_result }} |
-              Expiry: {{ approval.expiry_date }} |
-              Approved by: {{ approval.approved_by }}
-            </li>
-          {% endfor %}
-        </ul>
-      {% else %}
-        <p>No approvals yet.</p>
       {% endif %}
     </div>
   </div>

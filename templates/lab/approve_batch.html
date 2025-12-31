@@ -6,9 +6,9 @@
 
   <p>
     <strong>Batch ID:</strong> {{ batch.id }} <br>
-    <strong>Milk Source:</strong> Cow {{ batch.milk_source.cow.tag_number }} (Yield {{ batch.milk_source.id }}) <br>
-    <strong>Litres Processed:</strong> {{ batch.litres }} <br>
-    <strong>Created by:</strong> {{ batch.processed_by }} on {{ batch.created_at }}
+    <strong>Milk Source:</strong> Tank {{ batch.source_tank }} <br>
+    <strong>Litres Processed:</strong> {{ batch.quantity_produced }} <br>
+    <strong>Created by:</strong> {{ batch.processed_by }} on {{ batch.produced_at }}
   </p>
 
   <hr>
@@ -18,7 +18,7 @@
     {{ form.as_p }}
 
     <button type="submit" class="btn btn-success">Save Approval</button>
-    <a href="{% url 'lab:milk_yield_tests' yield_id=batch.milk_source.id %}" class="btn btn-secondary">Cancel</a>
+    <a href="{% url 'lab:tank_yield_tests' tank=batch.source_tank %}" class="btn btn-secondary">Cancel</a>
   </form>
 
   <hr>

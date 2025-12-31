@@ -7,79 +7,254 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Nawa Sons Dairy</title>
   <link rel="stylesheet" href="{% static 'css/bootstrap.min.css' %}">
+  <!-- Bootstrap Icons -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+  <!-- Load fonts: Roboto (primary), Lato/Open Sans (secondary), Dancing Script (branding) -->
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=Lato:wght@400;600;700&family=Open+Sans:wght@400;600;700&family=Dancing+Script&display=swap">
+  <!-- Custom fonts CSS (defines font stacks and optional @font-face for Rustic Harvest / Nora Fields) -->
+  <link rel="stylesheet" href="{% static 'css/custom_fonts.css' %}">
+  <!-- Custom sidebar CSS -->
+  <link rel="stylesheet" href="{% static 'css/sidebar.css' %}">
 </head>
 <body>
-  <header>
-    <nav class="navbar navbar-expand-lg navbar-light bg-light">
-      <div class="container-fluid">
-        <a class="navbar-brand" href="/">Nawa Sons Dairy</a>
-        <div class="collapse navbar-collapse">
-          <ul class="navbar-nav me-auto mb-2 mb-lg-0">
-            <li class="nav-item"><a class="nav-link" href="/">Home</a></li>
-
-            {% if user.is_authenticated %}
-              <!-- Production -->
-              {% if perms.production.add_cow %}
-                <li class="nav-item"><a class="nav-link" href="{% url 'production:cow_create' %}">Register Cow</a></li>
-                <li class="nav-item"><a class="nav-link" href="{% url 'production:yield_create' %}">Add Yield</a></li>
-                <li class="nav-item"><a class="nav-link" href="{% url 'production:batch_form' %}">Create Batch</a></li>
-              {% endif %}
-
-              {% if perms.production.approve_milk %}
-                <li class="nav-item"><a class="nav-link" href="{% url 'production:cow_list' %}">Milk Approvals</a></li>
-              {% endif %}
-
-              {% if perms.production.view_productprice %}
-                <li class="nav-item"><a class="nav-link" href="{% url 'production:price_list' %}">Product Prices</a></li>
-              {% endif %}
-
-              <!-- Inventory -->
-              {% if perms.inventory.change_inventoryitem %}
-                <li class="nav-item"><a class="nav-link" href="{% url 'production:cow_list' %}">Production Unit</a></li>
-              {% endif %}
-              {% if perms.inventory.view_inventoryitem %}
-                <li class="nav-item"><a class="nav-link" href="{% url 'inventory:dashboard' %}">Store</a></li>
-              {% endif %}
-
-              <!-- Sales -->
-              {% if perms.sales.add_salestransaction %}
-                <li class="nav-item"><a class="nav-link" href="{% url 'sales:dashboard' %}">Sales</a></li>
-              {% endif %}
-
-              <!-- Customers -->
-              {% if perms.customers.add_customer %}
-                <li class="nav-item"><a class="nav-link" href="{% url 'customers:index' %}">Add Customer</a></li>
-              {% endif %}
-
-              <!-- Reports -->
-              {% if perms.reports.view_report %}
-                <li class="nav-item"><a class="nav-link" href="{% url 'reports:index' %}">Accounts</a></li>
-              {% endif %}
-
-              <!-- Lab -->
-              {% if perms.lab.view_rawmilktest %}
-                <li class="nav-item"><a class="nav-link" href="{% url 'lab:dashboard' %}">Lab Dashboard</a></li>
-              {% endif %}
-
-              <!-- Auth -->
-              <li class="nav-item"><a class="nav-link" href="{% url 'logout' %}">Logout</a></li>
-            {% else %}
-              <li class="nav-item"><a class="nav-link" href="{% url 'login' %}">Login</a></li>
-            {% endif %}
-
-            <li class="nav-item"><a class="nav-link" href="/docs/chapter1/">Documentation</a></li>
-          </ul>
-        </div>
+  <div class="d-flex">
+    <!-- Sidebar for desktop -->
+    <nav id="sidebar" class="d-none d-md-block bg-light border-end position-fixed" style="width: 250px; height: 100vh; top: 0; left: 0; overflow-y: auto; z-index: 1000;">
+      <div class="p-3 border-bottom">
+        <h5 class="brand-font text-center">Nawa Sons Dairy</h5>
       </div>
+      <ul class="nav flex-column p-2">
+        {% if user.is_authenticated %}
+          <li class="nav-item">
+            <a class="nav-link" href="/"><i class="bi bi-house-door"></i> Dashboard</a>
+          </li>
+          <!-- Customers -->
+          {% if perms.customers.add_customer %}
+            <li class="nav-item">
+              <a class="nav-link" href="#" data-bs-toggle="collapse" data-bs-target="#customersCollapse">👥 Customers <i class="bi bi-chevron-down float-end"></i></a>
+              <div class="collapse" id="customersCollapse">
+                <ul class="nav flex-column ms-3">
+                  <li class="nav-item"><a class="nav-link" href="{% url 'customers:index' %}">View Customers</a></li>
+                  <li class="nav-item"><a class="nav-link" href="{% url 'customers:create' %}">Add Customer</a></li>
+                </ul>
+              </div>
+            </li>
+          {% endif %}
+          <!-- Inventory -->
+          {% if perms.inventory.view_inventoryitem %}
+            <li class="nav-item">
+              <a class="nav-link" href="#" data-bs-toggle="collapse" data-bs-target="#inventoryCollapse">📦 Inventory <i class="bi bi-chevron-down float-end"></i></a>
+              <div class="collapse" id="inventoryCollapse">
+                <ul class="nav flex-column ms-3">
+                  <li class="nav-item"><a class="nav-link" href="{% url 'inventory:dashboard' %}">Inventory items</a></li>
+                  <li class="nav-item"><a class="nav-link" href="{% url 'inventory:dashboard' %}">Inventory transactions</a></li>
+                </ul>
+              </div>
+            </li>
+          {% endif %}
+          <!-- Lab -->
+          {% if perms.lab.view_rawmilktest %}
+            <li class="nav-item">
+              <a class="nav-link" href="#" data-bs-toggle="collapse" data-bs-target="#labCollapse">🔬 Lab <i class="bi bi-chevron-down float-end"></i></a>
+              <div class="collapse" id="labCollapse">
+                <ul class="nav flex-column ms-3">
+                  <li class="nav-item"><a class="nav-link" href="{% url 'lab:dashboard' %}">Lab batch approvals</a></li>
+                  <li class="nav-item"><a class="nav-link" href="{% url 'lab:dashboard' %}">Raw milk tests</a></li>
+                  <li class="nav-item"><a class="nav-link" href="{% url 'lab:dashboard' %}">Tank batch tests</a></li>
+                </ul>
+              </div>
+            </li>
+          {% endif %}
+          <!-- Production -->
+          {% if perms.production.add_cow or perms.production.approve_milk or perms.production.view_productprice or perms.production.add_productionbatch %}
+            <li class="nav-item">
+              <a class="nav-link" href="#" data-bs-toggle="collapse" data-bs-target="#productionCollapse">🏭 Production <i class="bi bi-chevron-down float-end"></i></a>
+              <div class="collapse" id="productionCollapse">
+                <ul class="nav flex-column ms-3">
+                  {% if perms.production.add_cow %}
+                    <li class="nav-item"><a class="nav-link" href="{% url 'production:cow_create' %}">Cows</a></li>
+                    <li class="nav-item"><a class="nav-link" href="{% url 'production:yield_create' %}">Milk yields</a></li>
+                  {% endif %}
+                  {% if perms.production.add_productionbatch %}
+                    <li class="nav-item"><a class="nav-link" href="{% url 'production:batch_form' %}">Create Batch</a></li>
+                  {% endif %}
+                  {% if perms.production.view_productprice %}
+                    <li class="nav-item"><a class="nav-link" href="{% url 'production:price_list' %}">Product price change logs</a></li>
+                    <li class="nav-item"><a class="nav-link" href="{% url 'production:price_list' %}">Product prices</a></li>
+                  {% endif %}
+                </ul>
+              </div>
+            </li>
+          {% endif %}
+          <!-- Suppliers -->
+          {% if perms.suppliers.view_supplier %}
+            <li class="nav-item">
+              <a class="nav-link" href="#" data-bs-toggle="collapse" data-bs-target="#suppliersCollapse">🚚 Suppliers <i class="bi bi-chevron-down float-end"></i></a>
+              <div class="collapse" id="suppliersCollapse">
+                <ul class="nav flex-column ms-3">
+                  <li class="nav-item"><a class="nav-link" href="{% url 'suppliers:order_list' %}">Supplier orders</a></li>
+                  <li class="nav-item"><a class="nav-link" href="{% url 'suppliers:order_list' %}">Suppliers</a></li>
+                </ul>
+              </div>
+            </li>
+          {% endif %}
+          <!-- Reports -->
+          {% if perms.reports.view_report %}
+            <li class="nav-item">
+              <a class="nav-link" href="{% url 'reports:index' %}"><i class="bi bi-bar-chart"></i> Reports</a>
+            </li>
+          {% endif %}
+          <!-- Settings (placeholder) -->
+          <li class="nav-item">
+            <a class="nav-link" href="#"><i class="bi bi-gear"></i> Settings</a>
+          </li>
+          <!-- Auth -->
+          <li class="nav-item">
+            <a class="nav-link" href="{% url 'logout' %}"><i class="bi bi-box-arrow-right"></i> Logout</a>
+          </li>
+        {% else %}
+          <li class="nav-item">
+            <a class="nav-link" href="{% url 'login' %}"><i class="bi bi-box-arrow-in-right"></i> Login</a>
+          </li>
+        {% endif %}
+        <li class="nav-item">
+          <a class="nav-link" href="/docs/chapter1/"><i class="bi bi-book"></i> Documentation</a>
+        </li>
+      </ul>
     </nav>
-  </header>
 
-  <main class="container mt-4">
-    {% block content %}{% endblock %}
-  </main>
+    <!-- Offcanvas for mobile -->
+    <div class="offcanvas offcanvas-start d-md-none" tabindex="-1" id="mobileSidebar" aria-labelledby="mobileSidebarLabel">
+      <div class="offcanvas-header border-bottom">
+        <h5 class="offcanvas-title brand-font" id="mobileSidebarLabel">Nawa Sons Dairy</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+      </div>
+      <div class="offcanvas-body p-0">
+        <ul class="nav flex-column p-2">
+          <!-- Same nav items as above, but for mobile -->
+          {% if user.is_authenticated %}
+            <li class="nav-item">
+              <a class="nav-link" href="/"><i class="bi bi-house-door"></i> Dashboard</a>
+            </li>
+            <!-- Customers -->
+            {% if perms.customers.add_customer %}
+              <li class="nav-item">
+                <a class="nav-link" href="#" data-bs-toggle="collapse" data-bs-target="#mobileCustomersCollapse">👥 Customers <i class="bi bi-chevron-down float-end"></i></a>
+                <div class="collapse" id="mobileCustomersCollapse">
+                  <ul class="nav flex-column ms-3">
+                    <li class="nav-item"><a class="nav-link" href="{% url 'customers:index' %}">View Customers</a></li>
+                    <li class="nav-item"><a class="nav-link" href="{% url 'customers:create' %}">Add Customer</a></li>
+                  </ul>
+                </div>
+              </li>
+            {% endif %}
+            <!-- Inventory -->
+            {% if perms.inventory.view_inventoryitem %}
+              <li class="nav-item">
+                <a class="nav-link" href="#" data-bs-toggle="collapse" data-bs-target="#mobileInventoryCollapse">📦 Inventory <i class="bi bi-chevron-down float-end"></i></a>
+                <div class="collapse" id="mobileInventoryCollapse">
+                  <ul class="nav flex-column ms-3">
+                    <li class="nav-item"><a class="nav-link" href="{% url 'inventory:dashboard' %}">Inventory items</a></li>
+                    <li class="nav-item"><a class="nav-link" href="{% url 'inventory:dashboard' %}">Inventory transactions</a></li>
+                  </ul>
+                </div>
+              </li>
+            {% endif %}
+            <!-- Lab -->
+            {% if perms.lab.view_rawmilktest %}
+              <li class="nav-item">
+                <a class="nav-link" href="#" data-bs-toggle="collapse" data-bs-target="#mobileLabCollapse">🔬 Lab <i class="bi bi-chevron-down float-end"></i></a>
+                <div class="collapse" id="mobileLabCollapse">
+                  <ul class="nav flex-column ms-3">
+                    <li class="nav-item"><a class="nav-link" href="{% url 'lab:dashboard' %}">Lab batch approvals</a></li>
+                    <li class="nav-item"><a class="nav-link" href="{% url 'lab:dashboard' %}">Raw milk tests</a></li>
+                    <li class="nav-item"><a class="nav-link" href="{% url 'lab:dashboard' %}">Tank batch tests</a></li>
+                  </ul>
+                </div>
+              </li>
+            {% endif %}
+            <!-- Production -->
+            {% if perms.production.add_cow or perms.production.approve_milk or perms.production.view_productprice or perms.production.add_productionbatch %}
+              <li class="nav-item">
+                <a class="nav-link" href="#" data-bs-toggle="collapse" data-bs-target="#mobileProductionCollapse">🏭 Production <i class="bi bi-chevron-down float-end"></i></a>
+                <div class="collapse" id="mobileProductionCollapse">
+                  <ul class="nav flex-column ms-3">
+                    {% if perms.production.add_cow %}
+                      <li class="nav-item"><a class="nav-link" href="{% url 'production:cow_create' %}">Cows</a></li>
+                      <li class="nav-item"><a class="nav-link" href="{% url 'production:yield_create' %}">Milk yields</a></li>
+                    {% endif %}
+                    {% if perms.production.add_productionbatch %}
+                      <li class="nav-item"><a class="nav-link" href="{% url 'production:batch_form' %}">Create Batch</a></li>
+                    {% endif %}
+                    {% if perms.production.view_productprice %}
+                      <li class="nav-item"><a class="nav-link" href="{% url 'production:price_list' %}">Product price change logs</a></li>
+                      <li class="nav-item"><a class="nav-link" href="{% url 'production:price_list' %}">Product prices</a></li>
+                    {% endif %}
+                  </ul>
+                </div>
+              </li>
+            {% endif %}
+            <!-- Suppliers -->
+            {% if perms.suppliers.view_supplier %}
+              <li class="nav-item">
+                <a class="nav-link" href="#" data-bs-toggle="collapse" data-bs-target="#mobileSuppliersCollapse">🚚 Suppliers <i class="bi bi-chevron-down float-end"></i></a>
+                <div class="collapse" id="mobileSuppliersCollapse">
+                  <ul class="nav flex-column ms-3">
+                    <li class="nav-item"><a class="nav-link" href="{% url 'suppliers:order_list' %}">Supplier orders</a></li>
+                    <li class="nav-item"><a class="nav-link" href="{% url 'suppliers:order_list' %}">Suppliers</a></li>
+                  </ul>
+                </div>
+              </li>
+            {% endif %}
+            <!-- Reports -->
+            {% if perms.reports.view_report %}
+              <li class="nav-item">
+                <a class="nav-link" href="{% url 'reports:index' %}"><i class="bi bi-bar-chart"></i> Reports</a>
+              </li>
+            {% endif %}
+            <!-- Settings -->
+            <li class="nav-item">
+              <a class="nav-link" href="#"><i class="bi bi-gear"></i> Settings</a>
+            </li>
+            <!-- Auth -->
+            <li class="nav-item">
+              <a class="nav-link" href="{% url 'logout' %}"><i class="bi bi-box-arrow-right"></i> Logout</a>
+            </li>
+          {% else %}
+            <li class="nav-item">
+              <a class="nav-link" href="{% url 'login' %}"><i class="bi bi-box-arrow-in-right"></i> Login</a>
+            </li>
+          {% endif %}
+          <li class="nav-item">
+            <a class="nav-link" href="/docs/chapter1/"><i class="bi bi-book"></i> Documentation</a>
+          </li>
+        </ul>
+      </div>
+    </div>
 
-  <footer class="text-center mt-4">
-    <p>&copy; Nawa Sons Dairy</p>
-  </footer>
+    <!-- Main content -->
+    <div class="flex-grow-1 d-flex flex-column" style="margin-left: 0; min-height: 100vh;">
+      <!-- Top bar for mobile -->
+      <nav class="navbar navbar-light bg-light d-md-none border-bottom">
+        <div class="container-fluid">
+          <button class="btn btn-outline-secondary" type="button" data-bs-toggle="offcanvas" data-bs-target="#mobileSidebar" aria-controls="mobileSidebar">
+            <i class="bi bi-list"></i>
+          </button>
+          <span class="navbar-brand mb-0 h1 brand-font">Nawa Sons Dairy</span>
+        </div>
+      </nav>
+
+      <main class="flex-grow-1 p-4">
+        {% block content %}{% endblock %}
+      </main>
+
+      <footer class="text-center py-3 border-top bg-light">
+        <p>&copy; Nawa Sons Dairy</p>
+      </footer>
+    </div>
+  </div>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+  <script src="{% static 'js/bootstrap.bundle.min.js' %}"></script>
 </body>
 </html>

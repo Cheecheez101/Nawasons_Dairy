@@ -1,10 +1,10 @@
 {% extends 'base.html' %}
 
 {% block content %}
-<h1>Welcome to Nawa Sons Dairy</h1>
+<h1 class="brand-heading">Welcome to Nawa Sons Dairy</h1>
 <p>Use the navigation to explore the system modules.</p>
 <section>
-  <h2>Latest Milk Yields</h2>
+  <h2 class="section-header">Latest Milk Yields</h2>
   <ul>
     {% for yield in latest_yields %}
       <li>{{ yield.recorded_at }} - {{ yield.cow.cow_id }}: {{ yield.total_yield }} L</li>

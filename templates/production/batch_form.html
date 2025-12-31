@@ -6,27 +6,16 @@
     <div class="col-md-8 offset-md-2">
       <h2 class="mb-3">Create Production Batch</h2>
 
-      <!-- Yield details -->
-      <div class="card mb-4">
-        <div class="card-body">
-          <p>
-            <strong>Source Tank:</strong> {{ milk_yield.storage_tank }} <br>
-            <strong>Available Litres:</strong> {{ milk_yield.yield_litres }} <br>
-            <strong>Cow:</strong> {{ milk_yield.cow.cow_id }}
-          </p>
-        </div>
-      </div>
-
       <!-- Batch form -->
       <form method="post" class="form">
         {% csrf_token %}
         <div class="mb-3">
           {{ form.as_p }}
         </div>
-        <button type="submit" class="btn btn-primary">✅ Create Batch</button>
-        <a href="{% url 'production:cow_list' %}" class="btn btn-secondary">Cancel</a>
-      </form>
-
+        <div id="max-units" class="alert alert-info mt-3" style="display:none;">
+          <strong>Maximum Units:</strong> <span id="units-calc">0</span>
+          <br><small>Units = (Litres available × 1000) / SKU size in ml</small>
+        </div>
       <!-- Messages -->
       {% if messages %}
         <div class="mt-3">
@@ -43,3 +32,38 @@
   </div>
 </div>
 {% endblock %}
+
+      <script>
+        function calculateUnits() {
+          const tankSelect = document.getElementById('id_source_tank');
+          const skuSelect = document.getElementById('id_sku');
+          const unitsDiv = document.getElementById('max-units');
+          const unitsSpan = document.getElementById('units-calc');
+
+          if (tankSelect.selectedIndex > 0 && skuSelect.selectedIndex > 0) {
+            const tankText = tankSelect.options[tankSelect.selectedIndex].text;
+            const skuText = skuSelect.options[skuSelect.selectedIndex].text;
+
+            // Parse litres from "Tank A: 150 litres"
+            const litresMatch = tankText.match(/(\d+(\.\d+)?)/);
+            const litres = litresMatch ? parseFloat(litresMatch[0]) : 0;
+
+            // Parse size from sku, e.g., "MAL A-CL-500" -> 500
+            const skuMatch = skuText.match(/-(\d+)/);
+            const size = skuMatch ? parseInt(skuMatch[1]) : 0;
+
+            if (litres > 0 && size > 0) {
+              const units = Math.floor((litres * 1000) / size);
+              unitsSpan.textContent = units;
+              unitsDiv.style.display = 'block';
+            } else {
+              unitsDiv.style.display = 'none';
+            }
+          } else {
+            unitsDiv.style.display = 'none';
+          }
+        }
+
+        document.getElementById('id_source_tank').addEventListener('change', calculateUnits);
+        document.getElementById('id_sku').addEventListener('change', calculateUnits);
+      </script>

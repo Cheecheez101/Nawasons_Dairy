@@ -202,7 +202,7 @@ class ProductionBatch(models.Model):
         ('ghee', 'Ghee'),
     ]
 
-    milk_source = models.ForeignKey(MilkYield, on_delete=models.PROTECT, related_name="production_batches")
+    source_tank = models.CharField(max_length=40, choices=[(tank, tank) for tank in MilkYield.TANK_CAPACITY_LITRES.keys() if tank != 'Unassigned'])
     product_type = models.CharField(max_length=20, choices=PRODUCT_CHOICES)
     sku = models.CharField(max_length=30)  # e.g. MALA-CL-500
     quantity_produced = models.DecimalField(max_digits=10, decimal_places=2)
@@ -214,19 +214,32 @@ class ProductionBatch(models.Model):
         ordering = ["-produced_at"]
 
     def __str__(self):
-        return f"{self.product_type} batch {self.id} from {self.milk_source.storage_tank}"
+        return f"{self.product_type} batch {self.id} from {self.source_tank}"
 
     def consume_milk(self):
         """
         Deduct milk from source tank when batch is created.
         Enforce tank test approval and raw test approval before consumption.
         """
-        if not self.milk_source.raw_test_approved:
-            raise ValidationError("Raw milk not approved by Lab. Cannot consume from tank.")
-        if self.milk_source.tank_test_latest_status != "approved":
-            raise ValidationError("Tank batch not approved by Lab. Cannot consume from tank.")
-        if self.milk_source.yield_litres < self.quantity_produced:
+        # Get all approved yields in the tank
+        yields_in_tank = MilkYield.objects.filter(
+            storage_tank=self.source_tank,
+            raw_test_approved=True,
+            tank_test_latest_status="approved"
+        ).order_by('recorded_at')
+
+        total_available = sum(y.yield_litres for y in yields_in_tank)
+        if total_available < self.quantity_produced:
             raise ValidationError("Not enough milk in tank for this production batch")
-        self.milk_source.yield_litres -= self.quantity_produced
-        self.milk_source.save(update_fields=["yield_litres"])
+
+        # Deduct from yields, starting from oldest
+        remaining = self.quantity_produced
+        for y in yields_in_tank:
+            if remaining <= 0:
+                break
+            deduct = min(remaining, y.yield_litres)
+            y.yield_litres -= deduct
+            y.save(update_fields=["yield_litres"])
+            remaining -= deduct
+
         self.moved_to_lab = True
