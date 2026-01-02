@@ -1,42 +1,56 @@
 {% extends 'base.html' %}
 {% block content %}
-<h1>Product Prices</h1>
-<div>
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-4">
+  <div>
+    <h1 class="h3 mb-1">Product Prices</h1>
+    <p class="text-muted mb-0">Latest approved selling prices per SKU.</p>
+  </div>
   {% if perms.production.add_productprice %}
-    <a href="{% url 'production:price_create' %}">Add Price</a>
+    <a href="{% url 'production:price_create' %}" class="btn btn-primary">
+      <i class="bi bi-tags me-1"></i> Add Price
+    </a>
   {% endif %}
 </div>
-<table>
-  <thead>
-    <tr>
-      <th>SKU</th>
-      <th>Product</th>
-      <th>Price</th>
-      <th>Last Updated</th>
-      <th>Updated By</th>
-      <th>Actions</th>
-    </tr>
-  </thead>
-  <tbody>
-    {% for price in prices %}
-      <tr>
-        <td>{{ price.sku }}</td>
-        <td>{{ price.product_name }}</td>
-        <td>{{ price.price }}</td>
-        <td>{{ price.last_updated|date:"Y-m-d H:i" }}</td>
-        <td>{{ price.updated_by }}</td>
-        <td>
-          {% if perms.production.change_productprice %}
-            <a href="{% url 'production:price_update' price.pk %}">Edit</a>
-          {% endif %}
-        </td>
-      </tr>
-    {% empty %}
-      <tr>
-        <td colspan="6">No product prices configured.</td>
-      </tr>
-    {% endfor %}
-  </tbody>
-</table>
+
+<div class="card shadow-sm">
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-striped table-hover align-middle mb-0">
+        <thead class="table-light">
+          <tr>
+            <th>SKU</th>
+            <th>Product</th>
+            <th class="text-end">Price</th>
+            <th>Last Updated</th>
+            <th>Updated By</th>
+            <th class="text-end">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for price in prices %}
+          <tr>
+            <td class="fw-semibold">{{ price.sku }}</td>
+            <td>{{ price.product_name }}</td>
+            <td class="text-end">KES {{ price.price|floatformat:2 }}</td>
+            <td>{{ price.last_updated|date:"Y-m-d H:i" }}</td>
+            <td>{{ price.updated_by }}</td>
+            <td class="text-end">
+              {% if perms.production.change_productprice %}
+                <a href="{% url 'production:price_update' price.pk %}" class="btn btn-outline-secondary btn-sm">Edit</a>
+              {% else %}
+                <span class="text-muted">—</span>
+              {% endif %}
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="6" class="text-center text-muted py-4">No product prices configured.</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
 {% endblock %}
 

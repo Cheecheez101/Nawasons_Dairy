@@ -1,16 +1,1353 @@
 {% extends 'base.html' %}
+{% load static querystring %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/reports_dashboard.css' %}">
+{% endblock %}
+
 {% block content %}
-<h1>Reports Dashboard</h1>
-<form method="get">
-  <label>Start Date</label>
-  <input type="date" name="start_date" value="{{ start_date }}">
-  <label>End Date</label>
-  <input type="date" name="end_date" value="{{ end_date }}">
-  <button type="submit">Filter</button>
-</form>
-<ul>
-  <li>Total Milk Production: {{ production_total }} L</li>
-  <li>Total Inventory Stock: {{ inventory_total }}</li>
-  <li>Total Sales Amount: {{ sales_total }}</li>
-</ul>
+<div class="reports-surface py-4 py-lg-5">
+  <div class="container-xxl px-3 px-lg-0">
+    <section class="reports-hero">
+      <div class="row g-4 align-items-center">
+        <div class="col-lg-7">
+          <p class="eyebrow mb-2">Insight Hub</p>
+          <h1 class="mb-3">Enterprise Reporting Suite</h1>
+          <p class="mb-3">
+            Monitor operational health and strategic momentum across production, inventory, sales,
+            customers, suppliers, and leadership KPIs. Every report supports color-coded alerts,
+            scheduled generation (daily • weekly • monthly), and export-ready tables/charts for PDF or
+            Excel.
+          </p>
+          <div class="hero-actions">
+            <span class="hero-chip">PDF &amp; Excel exports enabled</span>
+            <span class="hero-chip">Color coding: green / yellow / red</span>
+            <span class="hero-chip">Auto schedules: Daily · Weekly · Monthly</span>
+          </div>
+        </div>
+        <div class="col-lg-5">
+          <form method="get" class="form-styled">
+            <div class="row g-3">
+              <div class="col-12 col-md-6">
+                <label class="form-label" for="start_date">Start Date</label>
+                <input type="date" class="form-control" id="start_date" name="start_date" value="{{ start_date }}">
+              </div>
+              <div class="col-12 col-md-6">
+                <label class="form-label" for="end_date">End Date</label>
+                <input type="date" class="form-control" id="end_date" name="end_date" value="{{ end_date }}">
+              </div>
+              <div class="col-12">
+                <label class="form-label" for="module">Module</label>
+                <select class="form-select" id="module" name="module">
+                  <option value="">All Modules</option>
+                  <option value="production" {% if module == 'production' %}selected{% endif %}>Production</option>
+                  <option value="inventory" {% if module == 'inventory' %}selected{% endif %}>Inventory</option>
+                  <option value="sales" {% if module == 'sales' %}selected{% endif %}>Sales &amp; Finance</option>
+                  <option value="customers" {% if module == 'customers' %}selected{% endif %}>Customers &amp; Suppliers</option>
+                  <option value="management" {% if module == 'management' %}selected{% endif %}>Management</option>
+                </select>
+              </div>
+              <div class="col-12 d-flex justify-content-between">
+                <button type="submit" class="btn btn-primary">Filter</button>
+                <div class="btn-group" role="group">
+                  <button type="submit" name="format" value="pdf" class="btn btn-outline-secondary">Export PDF</button>
+                  <button type="submit" name="format" value="excel" class="btn btn-outline-secondary">Export Excel</button>
+                </div>
+              </div>
+            </div>
+          </form>
+        </div>
+      </div>
+    </section>
+
+    {% if not active_module or active_module == 'production' %}
+    <section class="report-module" id="production-reports">
+      <div class="report-module-header">
+        <div>
+          <p class="text-uppercase text-muted small mb-1">Production</p>
+          <h2>Production Intelligence</h2>
+          <p class="mb-0 text-muted">Daily throughput, batch yield, quality, and trend forecasting for milk processing.</p>
+        </div>
+        <div class="report-actions">
+          <a href="{% url_with_query module='production' report=None format='pdf' %}" class="btn btn-outline-secondary">PDF</a>
+          <a href="{% url_with_query module='production' report=None format='excel' %}" class="btn btn-outline-secondary">Excel</a>
+        </div>
+      </div>
+      <div class="row g-4">
+        <div class="col-12">
+          <div class="report-card h-100">
+            <div class="report-card-header">
+              <div>
+                <p class="text-uppercase text-muted small mb-1">Report 1</p>
+                <h3>Daily Milk Yield</h3>
+                <p>Liters collected per cooling tank each day versus target.</p>
+              </div>
+              <div class="report-actions">
+                <a href="{% url_with_query module='production' report='production.daily' format='pdf' %}" class="btn btn-outline-secondary">PDF</a>
+                <a href="{% url_with_query module='production' report='production.daily' format='excel' %}" class="btn btn-outline-secondary">Excel</a>
+              </div>
+            </div>
+            <table class="report-table align-middle">
+              <thead>
+                <tr>
+                  <th>Tank</th>
+                  <th>Liters</th>
+                  <th>Target</th>
+                  <th>Variance</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for row in production_reports.daily %}
+                {% with status=row.status|default:'good' %}
+                <tr>
+                  <td>{{ row.tank|default:'Tank A' }}</td>
+                  <td>{{ row.liters|default:'0' }}</td>
+                  <td>{{ row.target|default:'0' }}</td>
+                  <td>{{ row.variance|default:'0%' }}</td>
+                  <td>
+                    <span class="status-chip status-{{ status }}">
+                      <span class="status-dot"></span>
+                      {{ row.status_label|default:status|capfirst }}
+                    </span>
+                  </td>
+                </tr>
+                {% endwith %}
+                {% empty %}
+                <tr>
+                  <td colspan="5" class="text-center text-muted">No yield data for the selected window.</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+            <div class="schedule-badges">
+              <span class="schedule-badge active">Daily</span>
+              <span class="schedule-badge">Weekly</span>
+              <span class="schedule-badge">Monthly</span>
+            </div>
+          </div>
+        </div>
+        <div class="col-12">
+          <div class="report-card h-100">
+            <div class="report-card-header">
+              <div>
+                <p class="text-uppercase text-muted small mb-1">Report 2</p>
+                <h3>Batch Production</h3>
+                <p>Units produced versus liters consumed, grouped by SKU.</p>
+              </div>
+              <div class="report-actions">
+                <a href="{% url_with_query module='production' report='production.batch' format='pdf' %}" class="btn btn-outline-secondary">PDF</a>
+                <a href="{% url_with_query module='production' report='production.batch' format='excel' %}" class="btn btn-outline-secondary">Excel</a>
+              </div>
+            </div>
+            <table class="report-table align-middle">
+              <thead>
+                <tr>
+                  <th>SKU</th>
+                  <th>Liters Used</th>
+                  <th>Units</th>
+                  <th>Yield %</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for row in production_reports.batch %}
+                {% with status=row.status|default:'warning' %}
+                <tr>
+                  <td>{{ row.sku|default:'Whole Milk 500ml' }}</td>
+                  <td>{{ row.liters|default:'0' }}</td>
+                  <td>{{ row.units|default:'0' }}</td>
+                  <td>{{ row.yield|default:'0%' }}</td>
+                  <td>
+                    <span class="status-chip status-{{ status }}">
+                      <span class="status-dot"></span>
+                      {{ row.status_label|default:status|capfirst }}
+                    </span>
+                  </td>
+                </tr>
+                {% endwith %}
+                {% empty %}
+                <tr>
+                  <td colspan="5" class="text-center text-muted">No batch production recorded.</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+            <div class="schedule-badges">
+              <span class="schedule-badge">Daily</span>
+              <span class="schedule-badge active">Weekly</span>
+              <span class="schedule-badge">Monthly</span>
+            </div>
+          </div>
+        </div>
+        <div class="col-12">
+          <div class="report-card h-100">
+            <div class="report-card-header">
+              <div>
+                <p class="text-uppercase text-muted small mb-1">Report 3</p>
+                <h3>Quality Control</h3>
+                <p>Rejected batches, spoilage causes, and compliance checks.</p>
+              </div>
+              <div class="report-actions">
+                <a href="{% url_with_query module='production' report='production.quality' format='pdf' %}" class="btn btn-outline-secondary">PDF</a>
+                <a href="{% url_with_query module='production' report='production.quality' format='excel' %}" class="btn btn-outline-secondary">Excel</a>
+              </div>
+            </div>
+            <table class="report-table align-middle">
+              <thead>
+                <tr>
+                  <th>Batch</th>
+                  <th>Issue</th>
+                  <th>Volume Lost</th>
+                  <th>Action</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for row in production_reports.quality %}
+                {% with status=row.status|default:'critical' %}
+                <tr>
+                  <td>{{ row.batch|default:'B-0001' }}</td>
+                  <td>{{ row.issue|default:'Spoilage' }}</td>
+                  <td>{{ row.volume|default:'0 L' }}</td>
+                  <td>{{ row.action|default:'Disposed' }}</td>
+                  <td>
+                    <span class="status-chip status-{{ status }}">
+                      <span class="status-dot"></span>
+                      {{ row.status_label|default:status|capfirst }}
+                    </span>
+                  </td>
+                </tr>
+                {% endwith %}
+                {% empty %}
+                <tr>
+                  <td colspan="5" class="text-center text-muted">No quality incidents logged.</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+            <div class="schedule-badges">
+              <span class="schedule-badge active">Daily</span>
+              <span class="schedule-badge">Weekly</span>
+              <span class="schedule-badge">Monthly</span>
+            </div>
+          </div>
+        </div>
+        <div class="col-12">
+          <div class="report-card h-100">
+            <div class="report-card-header">
+              <div>
+                <p class="text-uppercase text-muted small mb-1">Report 4</p>
+                <h3>Trend Analysis</h3>
+                <p>Weekly/monthly production volumes benchmarked to targets.</p>
+              </div>
+              <div class="report-actions">
+                <a href="{% url_with_query module='production' report='production.trends' format='pdf' %}" class="btn btn-outline-secondary">PDF</a>
+                <a href="{% url_with_query module='production' report='production.trends' format='excel' %}" class="btn btn-outline-secondary">Excel</a>
+              </div>
+            </div>
+            <table class="report-table align-middle">
+              <thead>
+                <tr>
+                  <th>Period</th>
+                  <th>Volume</th>
+                  <th>Target</th>
+                  <th>Variance</th>
+                  <th>Trend</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for row in production_reports.trends %}
+                <tr>
+                  <td>{{ row.period|default:'Week 32' }}</td>
+                  <td>{{ row.volume|default:'0 L' }}</td>
+                  <td>{{ row.target|default:'0 L' }}</td>
+                  <td>{{ row.variance|default:'0%' }}</td>
+                  <td>
+                    <div class="spark-bar" style="--spark-value:{{ row.trend|default:'50' }}%"></div>
+                    <div class="spark-row">
+                      {{ row.trend_label|default:'Flat vs target' }}
+                    </div>
+                  </td>
+                </tr>
+                {% empty %}
+                <tr>
+                  <td colspan="5" class="text-center text-muted">No trend data available.</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+            <div class="schedule-badges">
+              <span class="schedule-badge">Daily</span>
+              <span class="schedule-badge">Weekly</span>
+              <span class="schedule-badge active">Monthly</span>
+            </div>
+          </div>
+        </div>
+        <div class="col-12">
+          <div class="report-card h-100">
+            <div class="report-card-header">
+              <div>
+                <p class="text-uppercase text-muted small mb-1">Report 5</p>
+                <h3>Cow Yield Leaders</h3>
+                <p>Top performers versus expected daily capacity and health indicators.</p>
+              </div>
+              <div class="report-actions">
+                <a href="{% url_with_query module='production' report='production.cow_yield' format='pdf' %}" class="btn btn-outline-secondary">PDF</a>
+                <a href="{% url_with_query module='production' report='production.cow_yield' format='excel' %}" class="btn btn-outline-secondary">Excel</a>
+              </div>
+            </div>
+            <table class="report-table align-middle">
+              <thead>
+                <tr>
+                  <th>Cow</th>
+                  <th>Breed</th>
+                  <th>Yield</th>
+                  <th>Target</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for row in production_reports.cow_yield %}
+                {% with status=row.status|default:'warning' %}
+                <tr>
+                  <td>{{ row.cow|default:'Cow 01' }}</td>
+                  <td>{{ row.breed|default:'Friesian' }}</td>
+                  <td>{{ row.yield|default:'0 L' }}</td>
+                  <td>{{ row.target|default:'0 L' }}</td>
+                  <td>
+                    <span class="status-chip status-{{ status }}">
+                      <span class="status-dot"></span>
+                      {{ row.status_label|default:'Monitor' }}
+                    </span>
+                  </td>
+                </tr>
+                {% endwith %}
+                {% empty %}
+                <tr>
+                  <td colspan="5" class="text-center text-muted">No cow yield benchmarks available.</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+            <div class="schedule-badges">
+              <span class="schedule-badge">Daily</span>
+              <span class="schedule-badge active">Weekly</span>
+              <span class="schedule-badge">Monthly</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+    {% endif %}
+
+    {% if not active_module or active_module == 'inventory' %}
+    <section class="report-module" id="inventory-reports">
+      <div class="report-module-header">
+        <div>
+          <p class="text-uppercase text-muted small mb-1">Inventory</p>
+          <h2>Inventory Assurance</h2>
+          <p class="mb-0 text-muted">Focus on stock visibility, reorder alerts, wastage, and supplier delivery timing.</p>
+        </div>
+        <div class="report-actions">
+          <a href="{% url_with_query module='inventory' report=None format='pdf' %}" class="btn btn-outline-secondary">PDF</a>
+          <a href="{% url_with_query module='inventory' report=None format='excel' %}" class="btn btn-outline-secondary">Excel</a>
+        </div>
+      </div>
+      <div class="row g-4">
+        <div class="col-12">
+          <div class="report-card h-100">
+            <div class="report-card-header">
+              <div>
+                <p class="text-uppercase text-muted small mb-1">Report 6</p>
+                <h3>Stock Levels</h3>
+                <p>Milk, yogurt, cultures, and packaging materials on hand.</p>
+              </div>
+              <div class="report-actions">
+                <a href="{% url_with_query module='inventory' report='inventory.stock' format='pdf' %}" class="btn btn-outline-secondary">PDF</a>
+                <a href="{% url_with_query module='inventory' report='inventory.stock' format='excel' %}" class="btn btn-outline-secondary">Excel</a>
+              </div>
+            </div>
+            <table class="report-table align-middle">
+              <thead>
+                <tr>
+                  <th>Item</th>
+                  <th>On Hand</th>
+                  <th>Unit</th>
+                  <th>Coverage</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for row in inventory_reports.stock %}
+                {% with status=row.status|default:'good' %}
+                <tr>
+                  <td>{{ row.item|default:'Raw Milk' }}</td>
+                  <td>{{ row.qty|default:'0' }}</td>
+                  <td>{{ row.unit|default:'L' }}</td>
+                  <td>{{ row.coverage|default:'0 days' }}</td>
+                  <td>
+                    <span class="status-chip status-{{ status }}">
+                      <span class="status-dot"></span>
+                      {{ row.status_label|default:status|capfirst }}
+                    </span>
+                  </td>
+                </tr>
+                {% endwith %}
+                {% empty %}
+                <tr>
+                  <td colspan="5" class="text-center text-muted">No inventory items available.</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+            <div class="schedule-badges">
+              <span class="schedule-badge active">Daily</span>
+              <span class="schedule-badge">Weekly</span>
+              <span class="schedule-badge">Monthly</span>
+            </div>
+          </div>
+        </div>
+        <div class="col-12">
+          <div class="report-card h-100">
+            <div class="report-card-header">
+              <div>
+                <p class="text-uppercase text-muted small mb-1">Report 7</p>
+                <h3>Reorder Alerts</h3>
+                <p>Items below threshold with recommended reorder quantities.</p>
+              </div>
+              <div class="report-actions">
+                <a href="{% url_with_query module='inventory' report='inventory.reorder' format='pdf' %}" class="btn btn-outline-secondary">PDF</a>
+                <a href="{% url_with_query module='inventory' report='inventory.reorder' format='excel' %}" class="btn btn-outline-secondary">Excel</a>
+              </div>
+            </div>
+            <table class="report-table align-middle">
+              <thead>
+                <tr>
+                  <th>Item</th>
+                  <th>Current</th>
+                  <th>Threshold</th>
+                  <th>Suggested Order</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for row in inventory_reports.reorder %}
+                {% with status=row.status|default:'warning' %}
+                <tr>
+                  <td>{{ row.item|default:'Packaging Sleeves' }}</td>
+                  <td>{{ row.current|default:'0' }}</td>
+                  <td>{{ row.threshold|default:'0' }}</td>
+                  <td>{{ row.reorder|default:'0' }}</td>
+                  <td>
+                    <span class="status-chip status-{{ status }}">
+                      <span class="status-dot"></span>
+                      {{ row.status_label|default:'Warning' }}
+                    </span>
+                  </td>
+                </tr>
+                {% endwith %}
+                {% empty %}
+                <tr>
+                  <td colspan="5" class="text-center text-muted">No reorder alerts triggered.</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+            <div class="schedule-badges">
+              <span class="schedule-badge">Daily</span>
+              <span class="schedule-badge active">Weekly</span>
+              <span class="schedule-badge">Monthly</span>
+            </div>
+          </div>
+        </div>
+        <div class="col-12">
+          <div class="report-card h-100">
+            <div class="report-card-header">
+              <div>
+                <p class="text-uppercase text-muted small mb-1">Report 8</p>
+                <h3>Wastage</h3>
+                <p>Expired or spoiled products with root cause coding.</p>
+              </div>
+              <div class="report-actions">
+                <a href="{% url_with_query module='inventory' report='inventory.wastage' format='pdf' %}" class="btn btn-outline-secondary">PDF</a>
+                <a href="{% url_with_query module='inventory' report='inventory.wastage' format='excel' %}" class="btn btn-outline-secondary">Excel</a>
+              </div>
+            </div>
+            <table class="report-table align-middle">
+              <thead>
+                <tr>
+                  <th>Item</th>
+                  <th>Quantity</th>
+                  <th>Cause</th>
+                  <th>Value</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for row in inventory_reports.wastage %}
+                {% with status=row.status|default:'critical' %}
+                <tr>
+                  <td>{{ row.item|default:'Yogurt Cups' }}</td>
+                  <td>{{ row.quantity|default:'0' }}</td>
+                  <td>{{ row.cause|default:'Expired' }}</td>
+                  <td>{{ row.value|default:'KES 0' }}</td>
+                  <td>
+                    <span class="status-chip status-{{ status }}">
+                      <span class="status-dot"></span>
+                      {{ row.status_label|default:'Critical' }}
+                    </span>
+                  </td>
+                </tr>
+                {% endwith %}
+                {% empty %}
+                <tr>
+                  <td colspan="5" class="text-center text-muted">No wastage logged.</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+            <div class="schedule-badges">
+              <span class="schedule-badge active">Daily</span>
+              <span class="schedule-badge">Weekly</span>
+              <span class="schedule-badge">Monthly</span>
+            </div>
+          </div>
+        </div>
+        <div class="col-12">
+          <div class="report-card h-100">
+            <div class="report-card-header">
+              <div>
+                <p class="text-uppercase text-muted small mb-1">Report 9</p>
+                <h3>Supplier Delivery</h3>
+                <p>Incoming supplies, timeliness, shortages, and service-level compliance.</p>
+              </div>
+              <div class="report-actions">
+                <a href="{% url_with_query module='inventory' report='inventory.delivery' format='pdf' %}" class="btn btn-outline-secondary">PDF</a>
+                <a href="{% url_with_query module='inventory' report='inventory.delivery' format='excel' %}" class="btn btn-outline-secondary">Excel</a>
+              </div>
+            </div>
+            <table class="report-table align-middle">
+              <thead>
+                <tr>
+                  <th>Supplier</th>
+                  <th>Item</th>
+                  <th>On Time</th>
+                  <th>Shortage</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for row in inventory_reports.delivery %}
+                {% with status=row.status|default:'good' %}
+                <tr>
+                  <td>{{ row.supplier|default:'Supplier A' }}</td>
+                  <td>{{ row.item|default:'Milk Powder' }}</td>
+                  <td>{{ row.on_time|default:'100%' }}</td>
+                  <td>{{ row.shortage|default:'0' }}</td>
+                  <td>
+                    <span class="status-chip status-{{ status }}">
+                      <span class="status-dot"></span>
+                      {{ row.status_label|default:status|capfirst }}
+                    </span>
+                  </td>
+                </tr>
+                {% endwith %}
+                {% empty %}
+                <tr>
+                  <td colspan="5" class="text-center text-muted">No supplier deliveries to display.</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+            <div class="schedule-badges">
+              <span class="schedule-badge">Daily</span>
+              <span class="schedule-badge active">Weekly</span>
+              <span class="schedule-badge">Monthly</span>
+            </div>
+          </div>
+        </div>
+        <div class="col-12">
+          <div class="report-card h-100">
+            <div class="report-card-header">
+              <div>
+                <p class="text-uppercase text-muted small mb-1">Storage Insight</p>
+                <h3>Cold Storage Utilization</h3>
+                <p>Fill rates and capacity health across every storage location.</p>
+              </div>
+              <div class="report-actions">
+                <a href="{% url_with_query module='inventory' report='inventory.storage' format='pdf' %}" class="btn btn-outline-secondary">PDF</a>
+                <a href="{% url_with_query module='inventory' report='inventory.storage' format='excel' %}" class="btn btn-outline-secondary">Excel</a>
+              </div>
+            </div>
+            <table class="report-table align-middle">
+              <thead>
+                <tr>
+                  <th>Location</th>
+                  <th>Type</th>
+                  <th>Capacity</th>
+                  <th>On Hand</th>
+                  <th>Fill %</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for row in inventory_reports.storage %}
+                {% with status=row.status|default:'good' %}
+                <tr>
+                  <td>{{ row.location|default:'Cold Room 1' }}</td>
+                  <td>{{ row.type|default:'Cold Room' }}</td>
+                  <td>{{ row.capacity|default:'0' }}</td>
+                  <td>{{ row.current|default:'0' }}</td>
+                  <td>{{ row.fill|default:'0%' }}</td>
+                  <td>
+                    <span class="status-chip status-{{ status }}">
+                      <span class="status-dot"></span>
+                      {{ row.status_label|default:status|capfirst }}
+                    </span>
+                  </td>
+                </tr>
+                {% endwith %}
+                {% empty %}
+                <tr>
+                  <td colspan="6" class="text-center text-muted">No storage records available.</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+            <div class="schedule-badges">
+              <span class="schedule-badge">Daily</span>
+              <span class="schedule-badge active">Weekly</span>
+              <span class="schedule-badge">Monthly</span>
+            </div>
+          </div>
+        </div>
+        <div class="col-12">
+          <div class="report-card h-100">
+            <div class="report-card-header">
+              <div>
+                <p class="text-uppercase text-muted small mb-1">Storage Alert</p>
+                <h3>Expiring Cold Stock</h3>
+                <p>Lots within seven days of expiry or already lapsed.</p>
+              </div>
+              <div class="report-actions">
+                <a href="{% url_with_query module='inventory' report='inventory.storage_alerts' format='pdf' %}" class="btn btn-outline-secondary">PDF</a>
+                <a href="{% url_with_query module='inventory' report='inventory.storage_alerts' format='excel' %}" class="btn btn-outline-secondary">Excel</a>
+              </div>
+            </div>
+            <table class="report-table align-middle">
+              <thead>
+                <tr>
+                  <th>Storage</th>
+                  <th>Product</th>
+                  <th>Location</th>
+                  <th>Expiry</th>
+                  <th>Days Left</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for row in inventory_reports.storage_alerts %}
+                {% with status=row.status|default:'warning' %}
+                <tr>
+                  <td>#{{ row.storage_id|default:'001' }}</td>
+                  <td>{{ row.product|default:'SKU' }}</td>
+                  <td>{{ row.location|default:'Cold Room' }}</td>
+                  <td>{{ row.expiry|default:today }}</td>
+                  <td>{{ row.days_left|default:'0' }}</td>
+                  <td>
+                    <span class="status-chip status-{{ status }}">
+                      <span class="status-dot"></span>
+                      {{ row.status_label|default:status|capfirst }}
+                    </span>
+                  </td>
+                </tr>
+                {% endwith %}
+                {% empty %}
+                <tr>
+                  <td colspan="6" class="text-center text-muted">No cold storage alerts raised.</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+            <div class="schedule-badges">
+              <span class="schedule-badge active">Daily</span>
+              <span class="schedule-badge">Weekly</span>
+              <span class="schedule-badge">Monthly</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+    {% endif %}
+
+    {% if not active_module or active_module == 'sales' %}
+    <section class="report-module" id="sales-reports">
+      <div class="report-module-header">
+        <div>
+          <p class="text-uppercase text-muted small mb-1">Sales &amp; Finance</p>
+          <h2>Commercial Pulse</h2>
+          <p class="mb-0 text-muted">Sales velocity, product mix, customer value, and financial health.</p>
+        </div>
+        <div class="report-actions">
+          <a href="{% url_with_query module='sales' report=None format='pdf' %}" class="btn btn-outline-secondary">PDF</a>
+          <a href="{% url_with_query module='sales' report=None format='excel' %}" class="btn btn-outline-secondary">Excel</a>
+        </div>
+      </div>
+      <div class="row g-4">
+        <div class="col-12">
+          <div class="report-card h-100">
+            <div class="report-card-header">
+              <div>
+                <p class="text-uppercase text-muted small mb-1">Report 10</p>
+                <h3>Daily Sales</h3>
+                <p>Transactions, revenue, and payment mix.</p>
+              </div>
+              <div class="report-actions">
+                <a href="{% url_with_query module='sales' report='sales.daily' format='pdf' %}" class="btn btn-outline-secondary">PDF</a>
+                <a href="{% url_with_query module='sales' report='sales.daily' format='excel' %}" class="btn btn-outline-secondary">Excel</a>
+              </div>
+            </div>
+            <table class="report-table align-middle">
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Transactions</th>
+                  <th>Revenue</th>
+                  <th>Cash %</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for row in sales_reports.daily %}
+                {% with status=row.status|default:'good' %}
+                <tr>
+                  <td>{{ row.date|default:today }}</td>
+                  <td>{{ row.transactions|default:'0' }}</td>
+                  <td>{{ row.revenue|default:'KES 0' }}</td>
+                  <td>{{ row.cash_ratio|default:'0%' }}</td>
+                  <td>
+                    <span class="status-chip status-{{ status }}">
+                      <span class="status-dot"></span>
+                      {{ row.status_label|default:status|capfirst }}
+                    </span>
+                  </td>
+                </tr>
+                {% endwith %}
+                {% empty %}
+                <tr>
+                  <td colspan="5" class="text-center text-muted">No sales data captured.</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+            <div class="schedule-badges">
+              <span class="schedule-badge active">Daily</span>
+              <span class="schedule-badge">Weekly</span>
+              <span class="schedule-badge">Monthly</span>
+            </div>
+          </div>
+        </div>
+        <div class="col-12">
+          <div class="report-card h-100">
+            <div class="report-card-header">
+              <div>
+                <p class="text-uppercase text-muted small mb-1">Report 11</p>
+                <h3>Product Performance</h3>
+                <p>Sales by SKU with contribution margins.</p>
+              </div>
+              <div class="report-actions">
+                <a href="{% url_with_query module='sales' report='sales.product' format='pdf' %}" class="btn btn-outline-secondary">PDF</a>
+                <a href="{% url_with_query module='sales' report='sales.product' format='excel' %}" class="btn btn-outline-secondary">Excel</a>
+              </div>
+            </div>
+            <table class="report-table align-middle">
+              <thead>
+                <tr>
+                  <th>SKU</th>
+                  <th>Units</th>
+                  <th>Revenue</th>
+                  <th>Contribution</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for row in sales_reports.product %}
+                {% with status=row.status|default:'good' %}
+                <tr>
+                  <td>{{ row.sku|default:'Ghee 250g' }}</td>
+                  <td>{{ row.units|default:'0' }}</td>
+                  <td>{{ row.revenue|default:'KES 0' }}</td>
+                  <td>{{ row.margin|default:'0%' }}</td>
+                  <td>
+                    <span class="status-chip status-{{ status }}">
+                      <span class="status-dot"></span>
+                      {{ row.status_label|default:status|capfirst }}
+                    </span>
+                  </td>
+                </tr>
+                {% endwith %}
+                {% empty %}
+                <tr>
+                  <td colspan="5" class="text-center text-muted">No SKU performance available.</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+            <div class="schedule-badges">
+              <span class="schedule-badge">Daily</span>
+              <span class="schedule-badge active">Weekly</span>
+              <span class="schedule-badge">Monthly</span>
+            </div>
+          </div>
+        </div>
+        <div class="col-12">
+          <div class="report-card h-100">
+            <div class="report-card-header">
+              <div>
+                <p class="text-uppercase text-muted small mb-1">Report 12</p>
+                <h3>Customer Sales</h3>
+                <p>Top customers, purchase frequency, and loyalty metrics.</p>
+              </div>
+              <div class="report-actions">
+                <a href="{% url_with_query module='sales' report='sales.customers' format='pdf' %}" class="btn btn-outline-secondary">PDF</a>
+                <a href="{% url_with_query module='sales' report='sales.customers' format='excel' %}" class="btn btn-outline-secondary">Excel</a>
+              </div>
+            </div>
+            <table class="report-table align-middle">
+              <thead>
+                <tr>
+                  <th>Customer</th>
+                  <th>Orders</th>
+                  <th>Revenue</th>
+                  <th>Loyalty</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for row in sales_reports.customers %}
+                {% with status=row.status|default:'good' %}
+                <tr>
+                  <td>{{ row.customer|default:'Retail Partner' }}</td>
+                  <td>{{ row.orders|default:'0' }}</td>
+                  <td>{{ row.revenue|default:'KES 0' }}</td>
+                  <td>{{ row.loyalty|default:'0 pts' }}</td>
+                  <td>
+                    <span class="status-chip status-{{ status }}">
+                      <span class="status-dot"></span>
+                      {{ row.status_label|default:status|capfirst }}
+                    </span>
+                  </td>
+                </tr>
+                {% endwith %}
+                {% empty %}
+                <tr>
+                  <td colspan="5" class="text-center text-muted">No customer insights available.</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+            <div class="schedule-badges">
+              <span class="schedule-badge">Daily</span>
+              <span class="schedule-badge active">Weekly</span>
+              <span class="schedule-badge">Monthly</span>
+            </div>
+          </div>
+        </div>
+        <div class="col-12">
+          <div class="report-card h-100">
+            <div class="report-card-header">
+              <div>
+                <p class="text-uppercase text-muted small mb-1">Report 13</p>
+                <h3>Revenue vs Expenses</h3>
+                <p>Profitability analysis and variance to plan.</p>
+              </div>
+              <div class="report-actions">
+                <a href="{% url_with_query module='sales' report='sales.financials' format='pdf' %}" class="btn btn-outline-secondary">PDF</a>
+                <a href="{% url_with_query module='sales' report='sales.financials' format='excel' %}" class="btn btn-outline-secondary">Excel</a>
+              </div>
+            </div>
+            <table class="report-table align-middle">
+              <thead>
+                <tr>
+                  <th>Period</th>
+                  <th>Revenue</th>
+                  <th>Expenses</th>
+                  <th>Profit</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for row in sales_reports.financials %}
+                {% with status=row.status|default:'warning' %}
+                <tr>
+                  <td>{{ row.period|default:'Month' }}</td>
+                  <td>{{ row.revenue|default:'KES 0' }}</td>
+                  <td>{{ row.expenses|default:'KES 0' }}</td>
+                  <td>{{ row.profit|default:'KES 0' }}</td>
+                  <td>
+                    <span class="status-chip status-{{ status }}">
+                      <span class="status-dot"></span>
+                      {{ row.status_label|default:status|capfirst }}
+                    </span>
+                  </td>
+                </tr>
+                {% endwith %}
+                {% empty %}
+                <tr>
+                  <td colspan="5" class="text-center text-muted">No financial summary available.</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+            <div class="schedule-badges">
+              <span class="schedule-badge">Daily</span>
+              <span class="schedule-badge">Weekly</span>
+              <span class="schedule-badge active">Monthly</span>
+            </div>
+          </div>
+        </div>
+        <div class="col-12">
+          <div class="report-card">
+            <div class="report-card-header">
+              <div>
+                <p class="text-uppercase text-muted small mb-1">Report 14</p>
+                <h3>Cash Reconciliation</h3>
+                <p>Recorded sales versus actual cash collected with discrepancy flags.</p>
+              </div>
+              <div class="report-actions">
+                <a href="{% url_with_query module='sales' report='sales.cash' format='pdf' %}" class="btn btn-outline-secondary">PDF</a>
+                <a href="{% url_with_query module='sales' report='sales.cash' format='excel' %}" class="btn btn-outline-secondary">Excel</a>
+              </div>
+            </div>
+            <table class="report-table align-middle">
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Recorded</th>
+                  <th>Cash Count</th>
+                  <th>Difference</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for row in sales_reports.cash %}
+                {% with status=row.status|default:'warning' %}
+                <tr>
+                  <td>{{ row.date|default:today }}</td>
+                  <td>{{ row.recorded|default:'KES 0' }}</td>
+                  <td>{{ row.counted|default:'KES 0' }}</td>
+                  <td>{{ row.difference|default:'KES 0' }}</td>
+                  <td>
+                    <span class="status-chip status-{{ status }}">
+                      <span class="status-dot"></span>
+                      {{ row.status_label|default:status|capfirst }}
+                    </span>
+                  </td>
+                </tr>
+                {% endwith %}
+                {% empty %}
+                <tr>
+                  <td colspan="5" class="text-center text-muted">No cash reconciliation variances.</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+            <div class="schedule-badges">
+              <span class="schedule-badge">Daily</span>
+              <span class="schedule-badge active">Weekly</span>
+              <span class="schedule-badge">Monthly</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+    {% endif %}
+
+    {% if not active_module or active_module == 'relationship' %}
+    <section class="report-module" id="customer-supplier-reports">
+      <div class="report-module-header">
+        <div>
+          <p class="text-uppercase text-muted small mb-1">Customers &amp; Suppliers</p>
+          <h2>Relationship Analytics</h2>
+          <p class="mb-0 text-muted">Customer journeys, promotional impact, and supplier reliability.</p>
+        </div>
+        <div class="report-actions">
+          <a href="{% url_with_query module='customers' report=None format='pdf' %}" class="btn btn-outline-secondary">PDF</a>
+          <a href="{% url_with_query module='customers' report=None format='excel' %}" class="btn btn-outline-secondary">Excel</a>
+        </div>
+      </div>
+      <div class="row g-4">
+        <div class="col-12">
+          <div class="report-card h-100">
+            <div class="report-card-header">
+              <div>
+                <p class="text-uppercase text-muted small mb-1">Report 15</p>
+                <h3>Customer Purchase History</h3>
+                <p>Buying trends, preferred SKUs, and loyalty tiers.</p>
+              </div>
+              <div class="report-actions">
+                <a href="{% url_with_query module='customers' report='relationship.purchase_history' format='pdf' %}" class="btn btn-outline-secondary">PDF</a>
+                <a href="{% url_with_query module='customers' report='relationship.purchase_history' format='excel' %}" class="btn btn-outline-secondary">Excel</a>
+              </div>
+            </div>
+            <table class="report-table align-middle">
+              <thead>
+                <tr>
+                  <th>Customer</th>
+                  <th>Preference</th>
+                  <th>Trend</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for row in relationship_reports.purchase_history %}
+                <tr>
+                  <td>{{ row.customer|default:'Wholesale Partner' }}</td>
+                  <td>{{ row.preference|default:'Flavored Yogurt' }}</td>
+                  <td>
+                    <div class="spark-bar" style="--spark-value:{{ row.trend|default:'60' }}%"></div>
+                    <div class="spark-row">{{ row.trend_label|default:'▲ 5% repeat orders' }}</div>
+                  </td>
+                </tr>
+                {% empty %}
+                <tr>
+                  <td colspan="3" class="text-center text-muted">No purchase history yet.</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+            <div class="schedule-badges">
+              <span class="schedule-badge">Daily</span>
+              <span class="schedule-badge active">Weekly</span>
+              <span class="schedule-badge">Monthly</span>
+            </div>
+          </div>
+        </div>
+        <div class="col-12">
+          <div class="report-card h-100">
+            <div class="report-card-header">
+              <div>
+                <p class="text-uppercase text-muted small mb-1">Report 16</p>
+                <h3>Promotions Effectiveness</h3>
+                <p>Impact of discounts and bundles on incremental sales.</p>
+              </div>
+              <div class="report-actions">
+                <a href="{% url_with_query module='customers' report='relationship.promotions' format='pdf' %}" class="btn btn-outline-secondary">PDF</a>
+                <a href="{% url_with_query module='customers' report='relationship.promotions' format='excel' %}" class="btn btn-outline-secondary">Excel</a>
+              </div>
+            </div>
+            <table class="report-table align-middle">
+              <thead>
+                <tr>
+                  <th>Promotion</th>
+                  <th>Uplift</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for row in relationship_reports.promotions %}
+                {% with status=row.status|default:'good' %}
+                <tr>
+                  <td>{{ row.name|default:'Holiday Bundle' }}</td>
+                  <td>{{ row.uplift|default:'+0%' }}</td>
+                  <td>
+                    <span class="status-chip status-{{ status }}">
+                      <span class="status-dot"></span>
+                      {{ row.status_label|default:status|capfirst }}
+                    </span>
+                  </td>
+                </tr>
+                {% endwith %}
+                {% empty %}
+                <tr>
+                  <td colspan="3" class="text-center text-muted">No promotions active.</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+            <div class="schedule-badges">
+              <span class="schedule-badge">Daily</span>
+              <span class="schedule-badge">Weekly</span>
+              <span class="schedule-badge active">Monthly</span>
+            </div>
+          </div>
+        </div>
+        <div class="col-12">
+          <div class="report-card h-100">
+            <div class="report-card-header">
+              <div>
+                <p class="text-uppercase text-muted small mb-1">Report 17</p>
+                <h3>Supplier Performance</h3>
+                <p>Reliability, delivery times, order accuracy, and scorecards.</p>
+              </div>
+              <div class="report-actions">
+                <a href="{% url_with_query module='customers' report='relationship.suppliers' format='pdf' %}" class="btn btn-outline-secondary">PDF</a>
+                <a href="{% url_with_query module='customers' report='relationship.suppliers' format='excel' %}" class="btn btn-outline-secondary">Excel</a>
+              </div>
+            </div>
+            <table class="report-table align-middle">
+              <thead>
+                <tr>
+                  <th>Supplier</th>
+                  <th>Score</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for row in relationship_reports.suppliers %}
+                {% with status=row.status|default:'good' %}
+                <tr>
+                  <td>{{ row.supplier|default:'Supplier A' }}</td>
+                  <td>{{ row.score|default:'0%' }}</td>
+                  <td>
+                    <span class="status-chip status-{{ status }}">
+                      <span class="status-dot"></span>
+                      {{ row.status_label|default:status|capfirst }}
+                    </span>
+                  </td>
+                </tr>
+                {% endwith %}
+                {% empty %}
+                <tr>
+                  <td colspan="3" class="text-center text-muted">No supplier evaluations.</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+            <div class="schedule-badges">
+              <span class="schedule-badge active">Daily</span>
+              <span class="schedule-badge">Weekly</span>
+              <span class="schedule-badge">Monthly</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+    {% endif %}
+
+    {% if not active_module or active_module == 'management' %}
+    <section class="report-module" id="management-reports">
+      <div class="report-module-header">
+        <div>
+          <p class="text-uppercase text-muted small mb-1">Management &amp; Strategy</p>
+          <h2>Leadership Cockpit</h2>
+          <p class="mb-0 text-muted">High-level efficiency, productivity, adoption, and forecasting signals.</p>
+        </div>
+        <div class="report-actions">
+          <a href="{% url_with_query module='management' report=None format='pdf' %}" class="btn btn-outline-secondary">PDF</a>
+          <a href="{% url_with_query module='management' report=None format='excel' %}" class="btn btn-outline-secondary">Excel</a>
+        </div>
+      </div>
+      <div class="row g-4">
+        <div class="col-12">
+          <div class="report-card h-100">
+            <div class="report-card-header">
+              <div>
+                <p class="text-uppercase text-muted small mb-1">Report 18</p>
+                <h3>Efficiency</h3>
+                <p>Liters processed to units produced (yield rate).</p>
+              </div>
+              <div class="report-actions">
+                <a href="{% url_with_query module='management' report='management.efficiency' format='pdf' %}" class="btn btn-outline-secondary">PDF</a>
+                <a href="{% url_with_query module='management' report='management.efficiency' format='excel' %}" class="btn btn-outline-secondary">Excel</a>
+              </div>
+            </div>
+            <table class="report-table align-middle">
+              <thead>
+                <tr>
+                  <th>Period</th>
+                  <th>Liters</th>
+                  <th>Units</th>
+                  <th>Yield</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for row in management_reports.efficiency %}
+                {% with status=row.status|default:'good' %}
+                <tr>
+                  <td>{{ row.period|default:'Week' }}</td>
+                  <td>{{ row.liters|default:'0 L' }}</td>
+                  <td>{{ row.units|default:'0' }}</td>
+                  <td>{{ row.yield|default:'0%' }}</td>
+                  <td>
+                    <span class="status-chip status-{{ status }}">
+                      <span class="status-dot"></span>
+                      {{ row.status_label|default:status|capfirst }}
+                    </span>
+                  </td>
+                </tr>
+                {% endwith %}
+                {% empty %}
+                <tr>
+                  <td colspan="5" class="text-center text-muted">No efficiency metrics calculated.</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+            <div class="schedule-badges">
+              <span class="schedule-badge">Daily</span>
+              <span class="schedule-badge active">Weekly</span>
+              <span class="schedule-badge">Monthly</span>
+            </div>
+          </div>
+        </div>
+        <div class="col-12">
+          <div class="report-card h-100">
+            <div class="report-card-header">
+              <div>
+                <p class="text-uppercase text-muted small mb-1">Report 19</p>
+                <h3>Staff Productivity</h3>
+                <p>Batches handled per operator and exception counts.</p>
+              </div>
+              <div class="report-actions">
+                <a href="{% url_with_query module='management' report='management.productivity' format='pdf' %}" class="btn btn-outline-secondary">PDF</a>
+                <a href="{% url_with_query module='management' report='management.productivity' format='excel' %}" class="btn btn-outline-secondary">Excel</a>
+              </div>
+            </div>
+            <table class="report-table align-middle">
+              <thead>
+                <tr>
+                  <th>Operator</th>
+                  <th>Batches</th>
+                  <th>Exceptions</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for row in management_reports.productivity %}
+                {% with status=row.status|default:'warning' %}
+                <tr>
+                  <td>{{ row.operator|default:'Team A' }}</td>
+                  <td>{{ row.batches|default:'0' }}</td>
+                  <td>{{ row.exceptions|default:'0' }}</td>
+                  <td>
+                    <span class="status-chip status-{{ status }}">
+                      <span class="status-dot"></span>
+                      {{ row.status_label|default:status|capfirst }}
+                    </span>
+                  </td>
+                </tr>
+                {% endwith %}
+                {% empty %}
+                <tr>
+                  <td colspan="4" class="text-center text-muted">No productivity data captured.</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+            <div class="schedule-badges">
+              <span class="schedule-badge">Daily</span>
+              <span class="schedule-badge active">Weekly</span>
+              <span class="schedule-badge">Monthly</span>
+            </div>
+          </div>
+        </div>
+        <div class="col-12">
+          <div class="report-card h-100">
+            <div class="report-card-header">
+              <div>
+                <p class="text-uppercase text-muted small mb-1">Report 20</p>
+                <h3>System Usage</h3>
+                <p>Modules used most frequently and adoption heatmaps.</p>
+              </div>
+              <div class="report-actions">
+                <a href="{% url_with_query module='management' report='management.usage' format='pdf' %}" class="btn btn-outline-secondary">PDF</a>
+                <a href="{% url_with_query module='management' report='management.usage' format='excel' %}" class="btn btn-outline-secondary">Excel</a>
+              </div>
+            </div>
+            <table class="report-table align-middle">
+              <thead>
+                <tr>
+                  <th>Module</th>
+                  <th>Sessions</th>
+                  <th>% of Total</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for row in management_reports.usage %}
+                {% with status=row.status|default:'good' %}
+                <tr>
+                  <td>{{ row.module|default:'Inventory' }}</td>
+                  <td>{{ row.sessions|default:'0' }}</td>
+                  <td>{{ row.share|default:'0%' }}</td>
+                  <td>
+                    <span class="status-chip status-{{ status }}">
+                      <span class="status-dot"></span>
+                      {{ row.status_label|default:status|capfirst }}
+                    </span>
+                  </td>
+                </tr>
+                {% endwith %}
+                {% empty %}
+                <tr>
+                  <td colspan="4" class="text-center text-muted">No usage telemetry.</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+            <div class="schedule-badges">
+              <span class="schedule-badge active">Daily</span>
+              <span class="schedule-badge">Weekly</span>
+              <span class="schedule-badge">Monthly</span>
+            </div>
+          </div>
+        </div>
+        <div class="col-12">
+          <div class="report-card h-100">
+            <div class="report-card-header">
+              <div>
+                <p class="text-uppercase text-muted small mb-1">Report 21</p>
+                <h3>Forecasting</h3>
+                <p>Demand predictions based on historical sales and seasonal factors.</p>
+              </div>
+              <div class="report-actions">
+                <a href="{% url_with_query module='management' report='management.forecasting' format='pdf' %}" class="btn btn-outline-secondary">PDF</a>
+                <a href="{% url_with_query module='management' report='management.forecasting' format='excel' %}" class="btn btn-outline-secondary">Excel</a>
+              </div>
+            </div>
+            <table class="report-table align-middle">
+              <thead>
+                <tr>
+                  <th>Period</th>
+                  <th>Predicted</th>
+                  <th>Confidence</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for row in management_reports.forecasting %}
+                {% with status=row.status|default:'good' %}
+                <tr>
+                  <td>{{ row.period|default:'Next Month' }}</td>
+                  <td>{{ row.predicted|default:'0 units' }}</td>
+                  <td>{{ row.confidence|default:'0%' }}</td>
+                  <td>
+                    <span class="status-chip status-{{ status }}">
+                      <span class="status-dot"></span>
+                      {{ row.status_label|default:status|capfirst }}
+                    </span>
+                  </td>
+                </tr>
+                {% endwith %}
+                {% empty %}
+                <tr>
+                  <td colspan="4" class="text-center text-muted">No forecast generated.</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+            <div class="schedule-badges">
+              <span class="schedule-badge">Daily</span>
+              <span class="schedule-badge">Weekly</span>
+              <span class="schedule-badge active">Monthly</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+    {% endif %}
+  </div>
+</div>
 {% endblock %}

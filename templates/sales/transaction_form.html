@@ -1,0 +1,28 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container py-4">
+  <div class="row justify-content-center">
+    <div class="col-lg-8">
+      <div class="card shadow-sm">
+        <div class="card-header bg-light d-flex justify-content-between align-items-center">
+          <div>
+            <p class="text-muted text-uppercase small mb-1">Sales</p>
+            <h1 class="h4 mb-0">{{ title|default:'Edit Sale' }}</h1>
+          </div>
+          <span class="badge text-bg-primary">{{ transaction.transaction_id }}</span>
+        </div>
+        <div class="card-body">
+          <form method="post" class="form-styled">
+            {% csrf_token %}
+            {% include "partials/form_fields.html" with form=form %}
+            <div class="d-flex justify-content-end gap-2">
+              <a href="{% url 'sales:dashboard' %}" class="btn btn-light">Cancel</a>
+              <button type="submit" class="btn btn-primary">{{ submit_label|default:'Update Sale' }}</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

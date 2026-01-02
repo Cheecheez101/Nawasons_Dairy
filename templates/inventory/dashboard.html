@@ -1,99 +1,363 @@
 {% extends 'base.html' %}
 {% block content %}
-<h1>Inventory Dashboard</h1>
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-2">
+  <div>
+    <h1 class="h3 mb-1">Inventory Dashboard</h1>
+    <p class="text-muted mb-0">Live overview of raw milk, lab approvals, and packaged stock.</p>
+  </div>
+  <div class="d-flex flex-wrap gap-2">
+    <a href="{% url 'inventory:dashboard' %}" class="btn btn-outline-secondary btn-sm">
+      Refresh data
+    </a>
+    {% if perms.inventory.add_inventoryitem %}
+    <a href="{% url 'inventory:item_create' %}" class="btn btn-primary btn-sm">
+      <i class="bi bi-plus-circle me-1"></i> Add Item
+    </a>
+    {% endif %}
+  </div>
+</div>
 
-<section>
-  <h2>Tank Overview</h2>
-  <table class="table table-striped">
-    <tr><th>Tank</th><th>Volume (L)</th><th>Capacity (L)</th><th>Fill %</th></tr>
-    {% for tank in tank_rows %}
-    <tr>
-      <td>{{ tank.name }}</td>
-      <td>{{ tank.volume }}</td>
-      <td>{{ tank.capacity }}</td>
-      <td>{{ tank.percent }}%</td>
-    </tr>
-    {% endfor %}
-  </table>
-</section>
+<div class="row g-4">
+  <div class="col-12">
+    <div class="card shadow-sm h-100">
+      <div class="card-header bg-light">
+        <h2 class="h5 mb-0">Tank Overview</h2>
+      </div>
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table table-striped table-hover align-middle mb-0">
+            <thead class="table-light">
+              <tr>
+                <th>Tank</th>
+                <th class="text-end">Volume (L)</th>
+                <th class="text-end">Capacity (L)</th>
+                <th class="text-end">Fill %</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for tank in tank_rows %}
+              <tr>
+                <td class="fw-semibold">{{ tank.name }}</td>
+                <td class="text-end">{{ tank.volume }}</td>
+                <td class="text-end">{{ tank.capacity }}</td>
+                <td class="text-end">
+                  <span class="badge {% if tank.percent|floatformat:0 >= 85 %}bg-danger{% elif tank.percent|floatformat:0 >= 60 %}bg-warning text-dark{% else %}bg-success{% endif %}">
+                    {{ tank.percent }}%
+                  </span>
+                </td>
+              </tr>
+              {% empty %}
+              <tr>
+                <td colspan="4" class="text-center text-muted py-4">No tank readings available.</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
 
-<section>
-  <h2>Lab Approvals</h2>
-  <table class="table table-bordered">
-    <tr><th>Batch</th><th>Status</th><th>Expiry Date</th></tr>
-    {% for approval in approvals %}
-      <tr>
-        <td>{{ approval.production_batch }}</td>
-        <td>
-          {% if approval.overall_result == "approved" %}
-            <span class="badge bg-success">Approved</span>
-          {% elif approval.overall_result == "rejected" %}
-            <span class="badge bg-danger">Rejected</span>
-          {% else %}
-            <span class="badge bg-warning">Pending</span>
+  <div class="col-12">
+    <div class="card shadow-sm h-100">
+      <div class="card-header bg-light">
+        <h2 class="h5 mb-0">Lab Approvals</h2>
+      </div>
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table table-bordered table-hover align-middle mb-0">
+            <thead class="table-light">
+              <tr>
+                <th>Batch</th>
+                <th>Status</th>
+                <th>Expiry Date</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for approval in approvals %}
+              <tr>
+                <td>{{ approval.production_batch }}</td>
+                <td>
+                  {% if approval.overall_result == "approved" %}
+                    <span class="badge bg-success">Approved</span>
+                  {% elif approval.overall_result == "rejected" %}
+                    <span class="badge bg-danger">Rejected</span>
+                  {% else %}
+                    <span class="badge bg-warning text-dark">Pending</span>
+                  {% endif %}
+                </td>
+                <td>{{ approval.expiry_date|date:"Y-m-d"|default:'—' }}</td>
+              </tr>
+              {% empty %}
+              <tr>
+                <td colspan="3" class="text-center text-muted py-4">No approvals yet.</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-12">
+    <div class="card shadow-sm h-100">
+      <div class="card-header bg-light d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <div>
+          <h2 class="h5 mb-0">Cold Storage Locations</h2>
+          <small class="text-muted">Capacity usage across all storage areas</small>
+        </div>
+        {% if perms.storage.view_storagelocation %}
+          <a href="{% url 'storage:storage_locations' %}" class="btn btn-outline-primary btn-sm">Manage locations</a>
+        {% endif %}
+      </div>
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table table-striped align-middle mb-0">
+            <thead class="table-light">
+              <tr>
+                <th>Location</th>
+                <th>Type</th>
+                <th class="text-end">On hand</th>
+                <th class="text-end">Capacity</th>
+                <th class="text-end">Fill %</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for unit in storage_locations %}
+              <tr>
+                <td class="fw-semibold">{{ unit.name }}</td>
+                <td>{{ unit.type_label|default:'—' }}</td>
+                <td class="text-end">{{ unit.on_hand|default:0 }}</td>
+                <td class="text-end">{{ unit.capacity|default:0 }}</td>
+                <td class="text-end">
+                  <span class="badge {% if unit.percent >= 90 %}bg-danger{% elif unit.percent >= 70 %}bg-warning text-dark{% else %}bg-success{% endif %}">
+                    {{ unit.percent }}%
+                  </span>
+                </td>
+              </tr>
+              {% empty %}
+              <tr>
+                <td colspan="5" class="text-center text-muted py-4">
+                  No storage locations configured yet.
+                  {% if perms.storage.add_storagelocation %}
+                    <a href="{% url 'storage:location_add' %}">Add one now</a>.
+                  {% endif %}
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-12">
+    <div class="card shadow-sm h-100">
+      <div class="card-header bg-light d-flex flex-wrap justify-content-between align-items-center">
+        <div>
+          <h2 class="h5 mb-0">Expiring &amp; Expired Stock</h2>
+          <small class="text-muted">Lots expiring within 7 days or already expired</small>
+        </div>
+        <span class="badge bg-warning text-dark">{{ expiring_inventory|length|default:0 }} flagged</span>
+      </div>
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table table-bordered table-hover align-middle mb-0">
+            <thead class="table-light">
+              <tr>
+                <th>Storage ID</th>
+                <th>Product</th>
+                <th>Batch</th>
+                <th>Expiry Date</th>
+                <th>Days Left</th>
+                <th class="text-end">Quantity</th>
+                <th>Storage Unit</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for lot in expiring_inventory %}
+              <tr>
+                <td>#{{ lot.storage_id }}</td>
+                <td>
+                  {{ lot.product }}
+                  {% if lot.status == "expired" %}
+                    <div class="small text-danger">{{ lot.product }} - {{ lot.location|default:"inventory" }} stock is expired since {{ lot.expiry_date|date:"Y-m-d" }}.</div>
+                  {% elif lot.status == "near_expiry" %}
+                    <div class="small text-warning">{{ lot.product }} - {{ lot.location|default:"inventory" }} stock expires on {{ lot.expiry_date|date:"Y-m-d" }}.</div>
+                  {% endif %}
+                </td>
+                <td>{{ lot.production_batch }}</td>
+                <td>{{ lot.expiry_date|date:"Y-m-d" }}</td>
+                <td>{{ lot.days_left|default:"—" }}</td>
+                <td class="text-end">{{ lot.quantity }} {{ lot.unit|default:"" }}</td>
+                <td>{{ lot.location|default:"—" }}</td>
+                <td>
+                  {% if lot.status == "expired" %}
+                    <span class="badge bg-danger">Expired</span>
+                  {% elif lot.status == "near_expiry" %}
+                    <span class="badge bg-warning text-dark">Near Expiry</span>
+                  {% else %}
+                    <span class="badge bg-success">In Storage</span>
+                  {% endif %}
+                </td>
+              </tr>
+              {% empty %}
+              <tr>
+                <td colspan="8" class="text-center text-muted py-4">No stock nearing or past expiry.</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-12">
+    <div class="card shadow-sm h-100">
+      <div class="card-header bg-light">
+        <h2 class="h5 mb-0">Low Stock Alerts</h2>
+      </div>
+      <div class="card-body">
+        <div class="list-group list-group-flush">
+          {% for item in low_stock_items %}
+          <div class="list-group-item d-flex justify-content-between align-items-start">
+            <div>
+              <div class="fw-semibold">{{ item.name }} ({{ item.sku }})</div>
+              <small class="text-muted d-block">
+                {{ item.display_quantity|default:item.current_quantity }} {{ item.unit }} remaining
+                {% if item.quantity_source == "storage" %}
+                  <span class="badge bg-info text-dark ms-1">storage</span>
+                {% endif %}
+              </small>
+              {% if item.quantity_source == "storage" %}
+                <div class="small {% if item.system_is_negative %}text-danger{% else %}text-muted{% endif %}">
+                  System record: {{ item.system_quantity }} {{ item.unit }}
+                </div>
+              {% endif %}
+            </div>
+            <a href="{% url 'suppliers:create_order' item.id %}" class="btn btn-outline-danger btn-sm">Order</a>
+          </div>
+          {% empty %}
+          <div class="text-center text-muted py-3">All items above threshold.</div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-12">
+    <div class="card shadow-sm h-100">
+      <div class="card-header bg-light">
+        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+          <div>
+            <h2 class="h5 mb-0">All Items</h2>
+            <small class="text-muted">Track every SKU, stock level, and reorder threshold.</small>
+          </div>
+          {% if perms.inventory.add_inventoryitem %}
+            <a href="{% url 'inventory:item_create' %}" class="btn btn-outline-primary btn-sm">
+              <i class="bi bi-plus-circle me-1"></i> New Item
+            </a>
           {% endif %}
-        </td>
-        <td>
-          {% if approval.expiry_date %}
-            {{ approval.expiry_date }}
-          {% else %}
-            <span class="text-muted">Not set</span>
-          {% endif %}
-        </td>
-      </tr>
-    {% empty %}
-      <tr><td colspan="3">No approvals yet.</td></tr>
-    {% endfor %}
-  </table>
-</section>
+        </div>
+      </div>
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table table-hover align-middle mb-0">
+            <thead class="table-light">
+              <tr>
+                <th>Name</th>
+                <th>SKU</th>
+                <th>Quantity</th>
+                <th>Reorder Threshold</th>
+                <th class="text-end">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for item in items %}
+              <tr>
+                <td>{{ item.name }}</td>
+                <td>{{ item.sku }}</td>
+                <td>
+                  <div class="fw-semibold">{{ item.display_quantity|default:item.current_quantity }} {{ item.unit }}</div>
+                  {% if item.quantity_source == "storage" %}
+                    <div class="small text-muted">Storage reading</div>
+                    <div class="small {% if item.system_is_negative %}text-danger{% else %}text-muted{% endif %}">
+                      System record: {{ item.system_quantity }} {{ item.unit }}
+                    </div>
+                  {% endif %}
+                </td>
+                <td>{{ item.reorder_threshold }} {{ item.unit }}</td>
+                <td class="text-end">
+                  <div class="d-flex justify-content-end flex-wrap gap-2">
+                    {% if perms.inventory.change_inventoryitem %}
+                    <a href="{% url 'inventory:item_update' item.id %}" class="btn btn-outline-primary btn-sm">Edit</a>
+                    {% endif %}
+                    {% if perms.inventory.delete_inventoryitem %}
+                    <a href="{% url 'inventory:item_delete' item.id %}" class="btn btn-outline-danger btn-sm">Delete</a>
+                    {% endif %}
+                  </div>
+                </td>
+              </tr>
+              {% empty %}
+              <tr>
+                <td colspan="5" class="text-center text-muted py-4">No inventory items yet.</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
 
-
-<section>
-  <h2>Low Stock Alerts</h2>
-  <ul>
-    {% for item in low_stock_items %}
-      <li>
-        {{ item.name }} ({{ item.sku }}) - {{ item.current_quantity }} {{ item.unit }} remaining
-        <a href="{% url 'suppliers:create_order' item.id %}">Order from supplier</a>
-      </li>
-    {% empty %}
-      <li>All items above threshold.</li>
-    {% endfor %}
-  </ul>
-</section>
-
-<section>
-  <h2>All Items</h2>
-  <table class="table table-hover">
-    <tr><th>Name</th><th>SKU</th><th>Quantity</th><th>Reorder Threshold</th></tr>
-    {% for item in items %}
-    <tr>
-      <td>{{ item.name }}</td>
-      <td>{{ item.sku }}</td>
-      <td>{{ item.current_quantity }} {{ item.unit }}</td>
-      <td>{{ item.reorder_threshold }} {{ item.unit }}</td>
-    </tr>
-    {% empty %}
-    <tr><td colspan="4">No inventory items yet.</td></tr>
-    {% endfor %}
-  </table>
-</section>
-
-<section>
-  <h2>Processed Product Snapshot</h2>
-  <table class="table table-striped">
-    <tr><th>Category</th><th>Brand</th><th>Flavor</th><th>Size (ml)</th><th>Stock</th></tr>
-    {% for item in processed_items %}
-    <tr>
-      <td>{{ item.get_product_category_display }}</td>
-      <td>{{ item.brand|default:'-' }}</td>
-      <td>{{ item.flavor|default:'-' }}</td>
-      <td>{{ item.size_ml|default:'-' }}</td>
-      <td>{{ item.current_quantity }} {{ item.unit }}</td>
-    </tr>
-    {% empty %}
-    <tr><td colspan="5">No processed inventory recorded yet.</td></tr>
-    {% endfor %}
-  </table>
-</section>
+  <div class="col-12">
+    <div class="card shadow-sm">
+      <div class="card-header bg-light">
+        <h2 class="h5 mb-0">Processed Product Snapshot</h2>
+      </div>
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table table-striped align-middle mb-0">
+            <thead class="table-light">
+              <tr>
+                <th>Category</th>
+                <th>Brand</th>
+                <th>Flavor</th>
+                <th class="text-end">Size (ml)</th>
+                <th class="text-end">Stock</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for item in processed_items %}
+              <tr>
+                <td>{{ item.get_product_category_display }}</td>
+                <td>{{ item.brand|default:'-' }}</td>
+                <td>{{ item.flavor|default:'-' }}</td>
+                <td class="text-end">{{ item.size_ml|default:'-' }}</td>
+                <td class="text-end">
+                  <div>{{ item.display_quantity|default:item.current_quantity }} {{ item.unit }}</div>
+                  {% if item.quantity_source == "storage" %}
+                    <div class="small text-muted">Storage reading</div>
+                    <div class="small {% if item.system_is_negative %}text-danger{% else %}text-muted{% endif %}">
+                      System record: {{ item.system_quantity }} {{ item.unit }}
+                    </div>
+                  {% endif %}
+                </td>
+              </tr>
+              {% empty %}
+              <tr>
+                <td colspan="5" class="text-center text-muted py-4">No processed inventory recorded yet.</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
 {% endblock %}

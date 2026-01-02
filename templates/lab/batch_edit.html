@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% block title %}Edit batch {{ batch.id }}{% endblock %}
+
+{% block content %}
+<div class="container py-4" style="max-width: 720px;">
+    <header class="mb-4">
+        <p class="text-uppercase text-muted mb-1" style="letter-spacing:0.2rem;">Intake control</p>
+        <h1 class="mb-0">Edit batch #{{ batch.id }}</h1>
+        <p class="text-muted mb-0">Update the intake window metadata or adjust its state without leaving the approvals desk.</p>
+    </header>
+
+    <div class="card shadow-sm">
+        <form method="post" class="card-body">
+            {% csrf_token %}
+            {% if next %}
+                <input type="hidden" name="next" value="{{ next }}">
+            {% endif %}
+            <input type="hidden" name="action" value="update">
+            <div class="mb-3">
+                <label class="form-label">Session window</label>
+                {{ form.session }}
+                {% if form.session.errors %}
+                    <div class="text-danger small">{{ form.session.errors|join:", " }}</div>
+                {% endif %}
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Collection date</label>
+                {{ form.collection_date }}
+                {% if form.collection_date.errors %}
+                    <div class="text-danger small">{{ form.collection_date.errors|join:", " }}</div>
+                {% endif %}
+            </div>
+            <div class="mb-3">
+                <label class="form-label">State</label>
+                {{ form.state }}
+                <small class="text-muted d-block">Choose <strong>Open</strong> to keep collecting, <strong>Closed</strong> to stop intake, or <strong>Locked</strong> once the lab has issued a final verdict.</small>
+                {% if form.state.errors %}
+                    <div class="text-danger small">{{ form.state.errors|join:", " }}</div>
+                {% endif %}
+            </div>
+            <div class="d-flex gap-2">
+                <button type="submit" class="btn btn-primary">Save changes</button>
+                <a href="{{ next }}" class="btn btn-outline-secondary">Cancel</a>
+            </div>
+        </form>
+    </div>
+
+    <div class="card border-0 mt-3">
+        <div class="card-body bg-light border rounded">
+            <h2 class="h6">Danger zone</h2>
+            <p class="text-muted mb-3">Deleting a batch permanently removes its intake history and associated test. This mirrors the admin delete action.</p>
+            <form method="post" onsubmit="return confirm('Delete this batch and all related data?');">
+                {% csrf_token %}
+                {% if next %}
+                    <input type="hidden" name="next" value="{{ next }}">
+                {% endif %}
+                <input type="hidden" name="action" value="delete">
+                <button type="submit" class="btn btn-sm btn-danger">Delete batch</button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

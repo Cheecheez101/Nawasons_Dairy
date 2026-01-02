@@ -1,10 +1,23 @@
 {% extends 'base.html' %}
 {% block content %}
-<h1>Adjust Loyalty for {{ customer.name }}</h1>
-<form method="post">
-  {% csrf_token %}
-  {{ form.as_p }}
-  <button type="submit">Apply</button>
-</form>
+<div class="container py-4">
+  <div class="form-shell">
+    <div class="card shadow-sm">
+      <div class="card-header bg-light">
+        <h1 class="h4 mb-0">Adjust Loyalty for {{ customer.name }}</h1>
+      </div>
+      <div class="card-body">
+        <form method="post" class="form-styled">
+          {% csrf_token %}
+          {% include "partials/form_fields.html" with form=form %}
+          <div class="d-flex justify-content-end gap-2">
+            <a href="{% url 'customers:index' %}" class="btn btn-outline-secondary">Cancel</a>
+            <button type="submit" class="btn btn-primary">Apply</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
 {% endblock %}
 

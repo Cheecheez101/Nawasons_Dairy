@@ -33,6 +33,16 @@ class SalesTransaction(models.Model):
     def __str__(self):
         return self.transaction_id
 
+    @property
+    def customer_display_name(self):
+        if self.customer:
+            return self.customer.name
+        if self.walk_in_customer_name:
+            return self.walk_in_customer_name
+        if self.customer_phone:
+            return f"Walk-in ({self.customer_phone})"
+        return 'Walk-in customer'
+
 class SalesItem(models.Model):
     transaction = models.ForeignKey(SalesTransaction, related_name='items', on_delete=models.CASCADE)
     inventory_item = models.ForeignKey(InventoryItem, on_delete=models.PROTECT)

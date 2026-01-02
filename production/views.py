@@ -1,9 +1,43 @@
-from django.shortcuts import render, redirect, get_object_or_404
-from django.views import View
-from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
+from decimal import Decimal
+import json
+
 from django.contrib import messages
+from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
+from django.db.models import Q, Sum
+from django.http import HttpResponse
+from django.shortcuts import render, redirect, get_object_or_404
+from django.utils import timezone
+from django.utils.dateparse import parse_date
+from django.views import View
+from openpyxl import Workbook
+
+from inventory.models import InventoryItem
+from .forms import CowForm, MilkYieldForm, ProductPriceForm, ProductionBatchForm
 from .models import Cow, MilkYield, ProductPrice, ProductionBatch
-from .forms import MilkYieldForm, CowForm, ProductPriceForm, ProductionBatchForm
+
+
+def _filtered_yield_queryset(request):
+    qs = MilkYield.objects.select_related("cow")
+    filters = {
+        "session": (request.GET.get("session") or "").strip(),
+        "search": (request.GET.get("q") or "").strip(),
+        "date_from": (request.GET.get("date_from") or "").strip(),
+        "date_to": (request.GET.get("date_to") or "").strip(),
+    }
+
+    if filters["session"]:
+        qs = qs.filter(session=filters["session"])
+    if filters["search"]:
+        term = filters["search"]
+        qs = qs.filter(Q(cow__cow_id__icontains=term) | Q(cow__name__icontains=term))
+    date_from = parse_date(filters["date_from"]) if filters["date_from"] else None
+    if date_from:
+        qs = qs.filter(recorded_at__date__gte=date_from)
+    date_to = parse_date(filters["date_to"]) if filters["date_to"] else None
+    if date_to:
+        qs = qs.filter(recorded_at__date__lte=date_to)
+
+    return qs.order_by("-recorded_at"), filters
 
 
 class CowListView(LoginRequiredMixin, PermissionRequiredMixin, View):
@@ -11,7 +45,20 @@ class CowListView(LoginRequiredMixin, PermissionRequiredMixin, View):
 
     def get(self, request):
         cows = Cow.objects.prefetch_related('yields').all()
-        return render(request, 'production/cow_list.html', {'cows': cows})
+        yield_qs, filter_values = _filtered_yield_queryset(request)
+        yield_totals = yield_qs.aggregate(total_volume=Sum('yield_litres'))
+        yield_summary = {
+            'count': yield_qs.count(),
+            'volume': yield_totals.get('total_volume') or Decimal('0'),
+        }
+        context = {
+            'cows': cows,
+            'yield_rows': yield_qs,
+            'filters': filter_values,
+            'session_choices': MilkYield.SESSION_CHOICES,
+            'yield_summary': yield_summary,
+        }
+        return render(request, 'production/cow_list.html', context)
 
 
 class MilkYieldCreateView(LoginRequiredMixin, PermissionRequiredMixin, View):
@@ -26,6 +73,88 @@ class MilkYieldCreateView(LoginRequiredMixin, PermissionRequiredMixin, View):
             form.save()
             return redirect('production:cow_list')
         return render(request, 'production/yield_form.html', {'form': form})
+
+
+class MilkYieldUpdateView(LoginRequiredMixin, PermissionRequiredMixin, View):
+    permission_required = 'production.change_milkyield'
+
+    def get(self, request, pk):
+        yield_entry = get_object_or_404(MilkYield, pk=pk)
+        form = MilkYieldForm(instance=yield_entry)
+        return render(request, 'production/yield_form.html', {'form': form, 'yield_entry': yield_entry})
+
+    def post(self, request, pk):
+        yield_entry = get_object_or_404(MilkYield, pk=pk)
+        form = MilkYieldForm(request.POST, instance=yield_entry)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Milk yield updated successfully.')
+            return redirect('production:cow_list')
+        return render(request, 'production/yield_form.html', {'form': form, 'yield_entry': yield_entry})
+
+
+class MilkYieldDeleteView(LoginRequiredMixin, PermissionRequiredMixin, View):
+    permission_required = 'production.delete_milkyield'
+
+    def post(self, request, pk):
+        yield_entry = get_object_or_404(MilkYield, pk=pk)
+        yield_entry.delete()
+        messages.success(request, 'Milk yield entry deleted.')
+        return redirect('production:cow_list')
+
+
+class MilkYieldExportView(LoginRequiredMixin, PermissionRequiredMixin, View):
+    permission_required = 'production.view_milkyield'
+
+    def get(self, request):
+        yield_qs, _ = _filtered_yield_queryset(request)
+        workbook = Workbook()
+        worksheet = workbook.active
+        worksheet.title = 'Milk Yields'
+        worksheet.append([
+            'Milk clerk',
+            'Cow name',
+            'Cow ID',
+            'Breed',
+            'Session',
+            'Recorded at',
+            'Yield (L)',
+            'Tank',
+        ])
+
+        for entry in yield_qs:
+            clerk = getattr(entry, 'recorded_by', None)
+            if clerk:
+                clerk_name = clerk.get_full_name() or clerk.get_username()
+            else:
+                clerk_name = ''
+            recorded_at = entry.recorded_at
+            if recorded_at:
+                if timezone.is_naive(recorded_at):
+                    timestamp = recorded_at.strftime('%Y-%m-%d %H:%M')
+                else:
+                    timestamp = timezone.localtime(recorded_at).strftime('%Y-%m-%d %H:%M')
+            else:
+                timestamp = ''
+
+            worksheet.append([
+                clerk_name,
+                entry.cow.name or '',
+                entry.cow.cow_id,
+                entry.cow.breed,
+                entry.get_session_display(),
+                timestamp,
+                float(entry.yield_litres),
+                entry.storage_tank,
+            ])
+
+        response = HttpResponse(
+            content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        )
+        filename = f"milk-yields-{timezone.now():%Y%m%d-%H%M}.xlsx"
+        response['Content-Disposition'] = f'attachment; filename="{filename}"'
+        workbook.save(response)
+        return response
 
 
 class CowCreateView(LoginRequiredMixin, PermissionRequiredMixin, View):
@@ -124,4 +253,21 @@ def batch_form(request):
                 messages.error(request, f"Error creating batch: {e}")
     else:
         form = ProductionBatchForm()
-    return render(request, "production/batch_form.html", {"form": form})
+
+    # Prepare SKU data for dynamic filtering
+    items = InventoryItem.objects.all()
+    sku_data = {}
+    for item in items:
+        cat = item.product_category
+        if cat not in sku_data:
+            sku_data[cat] = []
+        sku_data[cat].append({
+            'sku': item.sku,
+            'name': f"{item.name} ({item.sku})",
+            'size': item.size_ml or 0
+        })
+
+    return render(request, "production/batch_form.html", {
+        "form": form,
+        "sku_data_json": json.dumps(sku_data)
+    })

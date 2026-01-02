@@ -1,18 +1,98 @@
 {% extends 'base.html' %}
 {% block content %}
-<h1>Create Supplier Order for {{ item.name }}</h1>
-<form method="post">
-  {% csrf_token %}
-  <label>Supplier</label>
-  <select name="supplier_id" required>
-    {% for supplier in suppliers %}
-      <option value="{{ supplier.id }}">{{ supplier.name }}</option>
-    {% endfor %}
-  </select>
-  <label>Expected Delivery</label>
-  <input type="date" name="expected_delivery" required>
-  <p>Quantity: {{ item.reorder_quantity|default:item.reorder_threshold }}</p>
-  <button type="submit">Create Order</button>
-</form>
+<div class="container py-4">
+  <div class="form-shell">
+    <div class="card shadow-sm">
+      <div class="card-header bg-light">
+        <h1 class="h4 mb-0">Create Supplier Order</h1>
+        <small class="text-muted">Inventory item: {{ item.name }}</small>
+      </div>
+      <div class="card-body">
+        {% if messages %}
+          <div class="mb-3">
+            {% for message in messages %}
+              <div class="alert alert-{{ message.tags|default:'info' }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+              </div>
+            {% endfor %}
+          </div>
+        {% endif %}
+        <form method="post" class="form-styled">
+          {% csrf_token %}
+
+          <div class="mb-3">
+            <label class="form-label" for="supplier_id">Supplier</label>
+            <select name="supplier_id" id="supplier_id" class="form-select" required>
+              {% for supplier in suppliers %}
+                <option value="{{ supplier.id }}" data-lead-time="{{ supplier.lead_time_days }}" {% if supplier.id == selected_supplier_id %}selected{% endif %}>{{ supplier.name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label" for="expected_delivery">Expected Delivery</label>
+            <input type="date" class="form-control" id="expected_delivery" name="expected_delivery" value="{{ expected_delivery_value|default:default_expected_delivery }}" required>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label" for="quantity">Quantity</label>
+            <input type="number" class="form-control" id="quantity" name="quantity" min="1" value="{{ quantity_value|default:default_quantity }}" required>
+          </div>
+
+          <div class="d-flex justify-content-end gap-2">
+            <a href="{% url 'suppliers:order_list' %}" class="btn btn-outline-secondary">Cancel</a>
+            <button type="submit" class="btn btn-primary">Create Order</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    const supplierSelect = document.getElementById('supplier_id');
+    const dateInput = document.getElementById('expected_delivery');
+    if (!supplierSelect || !dateInput) {
+      return;
+    }
+
+    const today = new Date('{{ today|date:"Y-m-d" }}T00:00:00');
+    let dateManuallyEdited = !!dateInput.value;
+
+    dateInput.addEventListener('input', function () {
+      dateManuallyEdited = true;
+    });
+
+    function addDays(baseDate, days) {
+      const updated = new Date(baseDate);
+      updated.setDate(updated.getDate() + Number(days || 0));
+      return updated.toISOString().slice(0, 10);
+    }
+
+    function maybeUpdateDate() {
+      if (dateManuallyEdited) {
+        return;
+      }
+      const option = supplierSelect.selectedOptions[0];
+      if (!option) {
+        return;
+      }
+      const leadTime = parseInt(option.dataset.leadTime, 10);
+      const fallbackDays = Number.isNaN(leadTime) ? 7 : leadTime;
+      dateInput.value = addDays(today, fallbackDays);
+    }
+
+    supplierSelect.addEventListener('change', function () {
+      dateManuallyEdited = false;
+      maybeUpdateDate();
+    });
+
+    maybeUpdateDate();
+  });
+</script>
 {% endblock %}
 

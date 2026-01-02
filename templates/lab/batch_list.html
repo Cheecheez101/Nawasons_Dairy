@@ -1,0 +1,144 @@
+{% extends "base.html" %}
+{% block title %}Session Batches{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <header class="mb-4">
+        <p class="text-uppercase text-muted mb-1" style="letter-spacing:0.2rem;">Lab Session Control</p>
+        <h1 class="mb-2">Intake batches</h1>
+        <p class="text-muted">Monitor raw-intake batches, confirm their window, and launch consolidated lab tests once sampling is complete.</p>
+    </header>
+
+    <section class="row g-3 mb-4">
+        <div class="col-md-3">
+            <div class="card shadow-sm border-0 h-100">
+                <div class="card-body">
+                    <p class="text-uppercase text-muted mb-1">Total batches</p>
+                    <h3 class="mb-0">{{ stats.total|default:0 }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card shadow-sm border-0 h-100">
+                <div class="card-body">
+                    <p class="text-uppercase text-muted mb-1">Pending tests</p>
+                    <h3 class="mb-0">{{ stats.pending|default:0 }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card shadow-sm border-0 h-100">
+                <div class="card-body">
+                    <p class="text-uppercase text-muted mb-1">Approved</p>
+                    <h3 class="mb-0">{{ stats.approved|default:0 }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card shadow-sm border-0 h-100">
+                <div class="card-body">
+                    <p class="text-uppercase text-muted mb-1">Total litres</p>
+                    <h3 class="mb-0">{{ stats.litres|default:0 }}</h3>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <form method="get" class="card border-0 shadow-sm mb-4">
+        <div class="card-body row g-3 align-items-end">
+            <div class="col-md-4">
+                <label class="form-label text-uppercase text-muted small">Session</label>
+                <select name="session" class="form-select">
+                    <option value="">All windows</option>
+                    {% for value,label in session_choices %}
+                        <option value="{{ value }}" {% if filters.session == value %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label text-uppercase text-muted small">Test status</label>
+                <select name="status" class="form-select">
+                    <option value="">All states</option>
+                    <option value="pending" {% if filters.status == 'pending' %}selected{% endif %}>Pending</option>
+                    {% for value,label in status_choices %}
+                        <option value="{{ value }}" {% if filters.status == value %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-4 d-flex gap-2">
+                <button type="submit" class="btn btn-dark flex-grow-1">Filter</button>
+                <a href="{{ request.path }}" class="btn btn-outline-secondary">Reset</a>
+            </div>
+        </div>
+    </form>
+
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-3">
+        <small class="text-muted">Showing {{ batches|length }} batches</small>
+        <div class="d-flex flex-wrap gap-2">
+            {% with request.GET.urlencode as current_query %}
+                <a href="{% url 'lab:batch_list_export' %}?format=pdf{% if current_query %}&{{ current_query }}{% endif %}" class="btn btn-sm btn-outline-secondary">Export PDF</a>
+                <a href="{% url 'lab:batch_list_export' %}?format=xlsx{% if current_query %}&{{ current_query }}{% endif %}" class="btn btn-sm btn-outline-secondary">Export Excel</a>
+            {% endwith %}
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>ID</th>
+                            <th>Session</th>
+                            <th>Window</th>
+                            <th>Samples</th>
+                            <th>Litres</th>
+                            <th>Lab Status</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for batch in batches %}
+                        <tr>
+                            <td>#{{ batch.id }}</td>
+                            <td>{{ batch.session|title }}</td>
+                            <td>
+                                {{ batch.collection_date|date:"M d" }}
+                                <span class="badge {% if batch.state == 'open' %}bg-success-subtle text-success{% elif batch.state == 'locked' %}bg-danger-subtle text-danger{% else %}bg-warning-subtle text-warning-emphasis{% endif %} ms-1">
+                                    {{ batch.state|title }}
+                                </span>
+                            </td>
+                            <td>{{ batch.sample_count|default:0 }}</td>
+                            <td>{{ batch.total_litres|default:0 }}</td>
+                            <td>
+                                {% if batch.test %}
+                                    <span class="badge {% if batch.test.result == 'approved' %}bg-success{% elif batch.test.result == 'rejected' %}bg-danger{% else %}bg-warning text-dark{% endif %}">
+                                        {{ batch.test.get_result_display }}
+                                    </span>
+                                {% else %}
+                                    <span class="badge bg-secondary">Pending</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-end">
+                                <div class="d-inline-flex flex-wrap gap-2 justify-content-end">
+                                    <a href="{% url 'lab:batch_edit' batch.id %}?next={{ request.get_full_path|urlencode }}" class="btn btn-sm btn-outline-secondary">Edit batch</a>
+                                    <a href="{% url 'lab:batch_test_run' batch.id %}" class="btn btn-sm btn-outline-primary {% if batch.state != 'closed' %}disabled{% endif %}" {% if batch.state != 'closed' %}aria-disabled="true"{% endif %}>Run test</a>
+                                    {% if batch.test %}
+                                        <a href="{% url 'lab:batch_test_run' batch.id %}" class="btn btn-sm btn-outline-secondary">Edit test</a>
+                                        <a href="{% url 'lab:batch_test_detail' batch.test.id %}" class="btn btn-sm btn-link">Details</a>
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="7" class="text-center text-muted py-4">No batches available for the selected filters.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

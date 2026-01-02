@@ -1,10 +1,10 @@
-from django.db import models
-from django.utils import timezone
-from django.db.models import Sum
-from decimal import Decimal
 from django.conf import settings
 from django.core.exceptions import ValidationError
-from django.utils.timezone import is_naive, make_aware
+from django.db import models
+from django.utils import timezone
+from decimal import Decimal
+
+from lab.models import MilkYield as LabMilkYield
 
 class Cow(models.Model):
     HEALTH_STATUSES = [
@@ -36,90 +36,7 @@ class Cow(models.Model):
         return self.yields.order_by('-recorded_at').first()
 
 
-class MilkYield(models.Model):
-    SESSION_CHOICES = [
-        ("morning", "Morning"),
-        ("afternoon", "Afternoon"),
-        ("evening", "Evening"),
-    ]
-
-    # Add an Unassigned option to allow clerk to record yields without picking a tank
-    TANK_CAPACITY_LITRES = {
-        "Unassigned": Decimal('0'),
-        "Tank A": Decimal('500'),
-        "Tank B": Decimal('750'),
-        "Tank C": Decimal('1000'),
-        "Spoilt Tank": Decimal('500'),
-    }
-
-    QUALITY_CHOICES = [
-        ("premium", "Premium"),
-        ("standard", "Standard"),
-        ("low", "Low"),
-    ]
-
-    QUALITY_SCORES = {
-        "premium": 98,
-        "standard": 85,
-        "low": 70,
-    }
-
-    cow = models.ForeignKey(Cow, on_delete=models.CASCADE, related_name='yields')
-    recorded_at = models.DateTimeField(auto_now_add=True)
-    session = models.CharField(max_length=20, choices=SESSION_CHOICES, default="morning")
-    yield_litres = models.DecimalField(max_digits=6, decimal_places=2)
-    storage_tank = models.CharField(max_length=40, choices=[(tank, tank) for tank in TANK_CAPACITY_LITRES.keys()], default="Unassigned")
-    storage_level_percentage = models.PositiveIntegerField(editable=False, default=0)
-    quality_grade = models.CharField(max_length=20, choices=QUALITY_CHOICES, default="standard")
-    quality_score = models.PositiveSmallIntegerField(default=85, editable=False)
-    quality_notes = models.TextField(blank=True)
-    total_yield = models.DecimalField(max_digits=6, decimal_places=2, editable=False)
-    created_at = models.DateTimeField(auto_now_add=True)
-
-    # Workflow flags
-    raw_test_approved = models.BooleanField(default=False)      # set by Lab raw test
-    tank_test_latest_status = models.CharField(max_length=20, default="pending")  # set by Lab tank test
-
-    class Meta:
-        ordering = ['-recorded_at', '-created_at']
-        unique_together = ('cow', 'recorded_at')
-        permissions = [
-            ('approve_milk', 'Can approve or reject milk quality'),
-        ]
-
-    def __str__(self):
-        return f"{self.cow.cow_id} - {self.recorded_at}"
-
-    def _measurement_datetime(self):
-        measurement_dt = self.recorded_at or timezone.now()
-        if is_naive(measurement_dt):
-            measurement_dt = make_aware(measurement_dt, timezone.get_current_timezone())
-        return measurement_dt
-
-    def _calculate_storage_level(self):
-        capacity = self.TANK_CAPACITY_LITRES.get(self.storage_tank)
-        if not capacity:
-            return 0
-        measurement_dt = self._measurement_datetime()
-        existing = MilkYield.objects.filter(
-            storage_tank=self.storage_tank,
-            recorded_at__date=measurement_dt.date()
-        ).exclude(pk=self.pk)
-        current_total = existing.aggregate(total=Sum('yield_litres'))['total'] or Decimal('0')
-        level = ((current_total + self.yield_litres) / capacity) * Decimal('100')
-        return int(min(100, round(level)))
-
-    def save(self, *args, **kwargs):
-        if not self.recorded_at:
-            self.recorded_at = timezone.now()
-        self.total_yield = self.yield_litres
-        self.quality_score = self.QUALITY_SCORES.get(self.quality_grade, 85)
-        self.storage_level_percentage = self._calculate_storage_level()
-        # enforce: raw milk must be approved before considered valid in tank workflows
-        if not self.raw_test_approved:
-            # We allow saving, but downstream consumption will be blocked until raw test approves.
-            pass
-        super().save(*args, **kwargs)
+MilkYield = LabMilkYield
 
 
 class ProductPrice(models.Model):
@@ -194,6 +111,11 @@ class ProductPriceChangeLog(models.Model):
 
 
 class ProductionBatch(models.Model):
+    class Status(models.TextChoices):
+        PENDING_LAB = ("pending_lab", "Awaiting Lab")
+        LAB_APPROVED = ("lab_approved", "Lab Approved")
+        READY_FOR_STORE = ("ready_for_store", "Ready for Storage")
+
     PRODUCT_CHOICES = [
         ('atm', 'Fresh Milk ATM'),
         ('esl', 'ESL Milk'),
@@ -206,9 +128,11 @@ class ProductionBatch(models.Model):
     product_type = models.CharField(max_length=20, choices=PRODUCT_CHOICES)
     sku = models.CharField(max_length=30)  # e.g. MALA-CL-500
     quantity_produced = models.DecimalField(max_digits=10, decimal_places=2)
+    liters_used = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     produced_at = models.DateTimeField(auto_now_add=True)
     processed_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="production_batches")
     moved_to_lab = models.BooleanField(default=False)
+    status = models.CharField(max_length=20, choices=Status.choices, default=Status.PENDING_LAB)
 
     class Meta:
         ordering = ["-produced_at"]
@@ -218,22 +142,24 @@ class ProductionBatch(models.Model):
 
     def consume_milk(self):
         """
-        Deduct milk from source tank when batch is created.
-        Enforce tank test approval and raw test approval before consumption.
+        Deduct milk from the source tank when a production batch is created.
+        Ensures only acceptable quality grades (standard/premium) are consumed.
         """
-        # Get all approved yields in the tank
         yields_in_tank = MilkYield.objects.filter(
             storage_tank=self.source_tank,
-            raw_test_approved=True,
-            tank_test_latest_status="approved"
+            quality_grade__in=["premium", "standard"],
         ).order_by('recorded_at')
 
+        liters_needed = self.liters_used or Decimal('0')
+        if liters_needed <= 0:
+            raise ValidationError("Liters used must be greater than zero before consuming milk")
+
         total_available = sum(y.yield_litres for y in yields_in_tank)
-        if total_available < self.quantity_produced:
+        if total_available < liters_needed:
             raise ValidationError("Not enough milk in tank for this production batch")
 
         # Deduct from yields, starting from oldest
-        remaining = self.quantity_produced
+        remaining = liters_needed
         for y in yields_in_tank:
             if remaining <= 0:
                 break
@@ -243,3 +169,54 @@ class ProductionBatch(models.Model):
             remaining -= deduct
 
         self.moved_to_lab = True
+        self.status = self.Status.PENDING_LAB
+
+
+class StorageLocation(models.Model):
+    name = models.CharField(max_length=100, unique=True)
+    description = models.TextField(blank=True)
+    capacity = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+
+    class Meta:
+        ordering = ["name"]
+
+    def __str__(self):
+        return self.name
+
+
+class ColdStorageInventory(models.Model):
+    STATUS_CHOICES = [
+        ("in_storage", "✅ In cold storage"),
+        ("near_expiry", "⏳ Near expiry — prioritize dispatch"),
+        ("expired", "❌ Expired — block dispatch"),
+    ]
+
+    storage_id = models.AutoField(primary_key=True)
+    production_batch = models.OneToOneField(
+        ProductionBatch,
+        on_delete=models.CASCADE,
+        related_name="production_storage_record",
+    )
+    product = models.CharField(max_length=100)
+    expiry_date = models.DateField()
+    quantity = models.DecimalField(max_digits=10, decimal_places=2)
+    location = models.ForeignKey(StorageLocation, on_delete=models.PROTECT, related_name="inventory")
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="in_storage")
+    last_restocked = models.DateTimeField(auto_now_add=True)
+    audit_notes = models.TextField(blank=True)
+
+    class Meta:
+        ordering = ["expiry_date"]
+
+    def __str__(self):
+        return f"Storage #{self.storage_id} - {self.product}"
+
+    def update_status(self):
+        today = timezone.now().date()
+        if self.expiry_date < today:
+            self.status = "expired"
+        elif (self.expiry_date - today).days <= 3:
+            self.status = "near_expiry"
+        else:
+            self.status = "in_storage"
+        self.save(update_fields=["status"])

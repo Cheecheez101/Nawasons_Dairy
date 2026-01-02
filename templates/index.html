@@ -1,16 +1,602 @@
-{% extends 'base.html' %}
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Nawa Sons Dairy Dashboard{% endblock %}
+
+{% block extra_css %}
+<style>
+    body {
+        background: #f5f7fb;
+        font-family: "Poppins", sans-serif;
+        color: #1f2430;
+    }
+
+    .dashboard-container {
+        display: flex;
+        flex-direction: column;
+        gap: 1.5rem;
+        padding: 2rem 1.5rem 3rem;
+        max-width: 1200px;
+        margin: 0 auto;
+    }
+
+    .page-title {
+        font-size: 1.75rem;
+        font-weight: 600;
+        margin-bottom: 0.25rem;
+    }
+
+    .page-subtitle {
+        color: #6f7f92;
+        font-size: 0.95rem;
+    }
+
+    .metrics-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 1rem;
+    }
+
+    .metric-card {
+        background: #ffffff;
+        border-radius: 18px;
+        padding: 1.25rem 1.5rem;
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        box-shadow: 0 12px 24px rgba(20, 54, 66, 0.08);
+        border: 1px solid rgba(77, 117, 129, 0.08);
+    }
+
+    .metric-icon {
+        width: 54px;
+        height: 54px;
+        border-radius: 14px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.35rem;
+        color: #094067;
+        background: rgba(9, 64, 103, 0.12);
+    }
+
+    .metric-content h3 {
+        margin: 0;
+        font-size: 1.4rem;
+        font-weight: 600;
+    }
+
+    .metric-label {
+        margin: 0;
+        color: #6f7f92;
+        font-size: 0.9rem;
+    }
+
+    .metric-content small {
+        display: block;
+        color: #94a3b8;
+        font-size: 0.8rem;
+        margin-top: 0.2rem;
+    }
+
+    .chart-card {
+        background: #ffffff;
+        border-radius: 22px;
+        padding: 1.5rem;
+        box-shadow: 0 18px 35px rgba(20, 54, 66, 0.12);
+        border: 1px solid rgba(77, 117, 129, 0.08);
+    }
+
+    .chart-card h4 {
+        margin-bottom: 1.25rem;
+        font-weight: 600;
+        font-size: 1.15rem;
+    }
+
+    .alert-panel {
+        background: #fff7ed;
+        border: 1px solid rgba(249, 115, 22, 0.2);
+        border-radius: 18px;
+        padding: 1.25rem;
+        box-shadow: 0 18px 28px rgba(120, 53, 15, 0.08);
+    }
+
+    .alert-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        padding: 0.85rem 0;
+        border-bottom: 1px dashed rgba(249, 115, 22, 0.3);
+    }
+
+    .alert-item:last-child {
+        border-bottom: none;
+    }
+
+    .quality-alert-header {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        margin-bottom: 1rem;
+        gap: 1rem;
+    }
+
+    .quality-alert-count small {
+        display: block;
+        text-transform: uppercase;
+        font-size: 0.7rem;
+        letter-spacing: 0.08em;
+        color: #94a3b8;
+    }
+
+    .quality-alert-count h4 {
+        margin: 0;
+        font-size: 1.15rem;
+        font-weight: 600;
+        color: #111827;
+    }
+
+    .quality-alert-row {
+        display: flex;
+        justify-content: space-between;
+        gap: 1.5rem;
+        padding: 0.75rem 0;
+        border-bottom: 1px dashed rgba(148, 163, 184, 0.25);
+    }
+
+    .quality-alert-row:last-child {
+        border-bottom: none;
+    }
+
+    .alert-source {
+        font-size: 0.75rem;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: #475569;
+        font-weight: 600;
+    }
+
+    .alert-message {
+        margin: 0.2rem 0 0;
+        font-size: 0.95rem;
+        color: #1f2430;
+    }
+
+    .alert-pill {
+        font-size: 0.75rem;
+        padding: 0.2rem 0.6rem;
+        border-radius: 999px;
+        font-weight: 600;
+    }
+
+    .alert-pill.warning {
+        background: rgba(234, 179, 8, 0.2);
+        color: #854d0e;
+    }
+
+    .alert-pill.critical {
+        background: rgba(239, 68, 68, 0.15);
+        color: #991b1b;
+    }
+
+    .drilldown-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 1.25rem;
+    }
+
+    .drilldown-card {
+        background: #ffffff;
+        border-radius: 20px;
+        padding: 1.25rem;
+        border: 1px solid rgba(15, 23, 42, 0.08);
+        box-shadow: 0 16px 24px rgba(2, 6, 23, 0.06);
+    }
+
+    .drilldown-card h4 {
+        font-size: 1rem;
+        font-weight: 600;
+        margin-bottom: 0.75rem;
+    }
+
+    .top-product-row {
+        display: flex;
+        justify-content: space-between;
+        padding: 0.65rem 0;
+        border-bottom: 1px solid rgba(226, 232, 240, 0.9);
+        font-size: 0.92rem;
+    }
+
+    .dashboard-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.65rem;
+    }
+
+    .dashboard-actions .btn {
+        border-radius: 999px;
+        padding: 0.55rem 1.3rem;
+    }
+
+    .status-pill {
+        font-size: 0.72rem;
+        padding: 0.15rem 0.55rem;
+        border-radius: 999px;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+    }
+
+    .status-pill.ok {
+        background: rgba(16, 185, 129, 0.18);
+        color: #0f766e;
+    }
+
+    .status-pill.alert {
+        background: rgba(244, 114, 182, 0.18);
+        color: #be123c;
+    }
+
+    .storage-row {
+        padding: 0.55rem 0;
+        border-bottom: 1px solid rgba(226, 232, 240, 0.8);
+    }
+
+    .storage-row:last-child {
+        border-bottom: none;
+    }
+
+    .top-product-row:last-child {
+        border-bottom: none;
+    }
+
+    .export-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+    }
+
+    @media (max-width: 768px) {
+        .dashboard-container {
+            padding: 1.5rem 1rem 2rem;
+        }
+
+        .metric-card {
+            padding: 1rem;
+        }
+
+        .metric-icon {
+            width: 48px;
+            height: 48px;
+        }
+    }
+</style>
+{% endblock %}
 
 {% block content %}
-<h1 class="brand-heading">Welcome to Nawa Sons Dairy</h1>
-<p>Use the navigation to explore the system modules.</p>
-<section>
-  <h2 class="section-header">Latest Milk Yields</h2>
-  <ul>
-    {% for yield in latest_yields %}
-      <li>{{ yield.recorded_at }} - {{ yield.cow.cow_id }}: {{ yield.total_yield }} L</li>
-    {% empty %}
-      <li>No yield records yet.</li>
-    {% endfor %}
-  </ul>
-</section>
+<div class="dashboard-container">
+    <div>
+        <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
+            <div>
+                <p class="page-subtitle">Welcome back, {{ request.user.first_name|default:request.user.username }}</p>
+                <h1 class="page-title">Farm Performance Overview</h1>
+            </div>
+            <div class="dashboard-actions">
+                <button type="button" class="btn btn-light border" onclick="window.location.reload()">
+                    <i class="fas fa-rotate-right"></i>
+                    Refresh Data
+                </button>
+                <button type="button" class="btn btn-outline-primary export-btn" data-export-trigger data-export-type="metrics">
+                    <i class="fas fa-file-export"></i>
+                    Export Metrics
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="metrics-grid">
+        <div class="metric-card">
+            <div class="metric-icon bg-primary-soft text-primary">
+                <i class="fas fa-tint"></i>
+            </div>
+            <div class="metric-content">
+                <p class="metric-label">Milk Collected Today</p>
+                <h3>{{ milk_collected_today|floatformat:0 }} L</h3>
+            </div>
+        </div>
+
+        <div class="metric-card">
+            <div class="metric-icon" style="background: rgba(255, 186, 0, 0.15); color: #d97706;">
+                <i class="fas fa-cow"></i>
+            </div>
+            <div class="metric-content">
+                <p class="metric-label">Active Herd</p>
+                <h3>{{ active_herd_count }} Cattle</h3>
+            </div>
+        </div>
+
+        <div class="metric-card">
+            <div class="metric-icon" style="background: rgba(244, 114, 182, 0.18); color: #be185d;">
+                <i class="fas fa-user-plus"></i>
+            </div>
+            <div class="metric-content">
+                <p class="metric-label">Customers Added Today</p>
+                <h3>{{ customers_today }}</h3>
+            </div>
+        </div>
+
+        <div class="metric-card">
+            <div class="metric-icon" style="background: rgba(16, 185, 129, 0.15); color: #047857;">
+                <i class="fas fa-warehouse"></i>
+            </div>
+            <div class="metric-content">
+                <p class="metric-label">Cold Storage Fill</p>
+                <h3>{{ chilling_capacity_pct|floatformat:1 }}%</h3>
+                <small>Live utilization</small>
+            </div>
+        </div>
+
+        <div class="metric-card">
+            <div class="metric-icon" style="background: rgba(14, 165, 233, 0.15); color: #0369a1;">
+                <i class="fas fa-chart-line"></i>
+            </div>
+            <div class="metric-content">
+                <p class="metric-label">Projected Revenue</p>
+                <h3>KSh {{ projected_revenue|floatformat:1 }}</h3>
+            </div>
+        </div>
+
+        <div class="metric-card">
+            <div class="metric-icon" style="background: rgba(14, 116, 144, 0.15); color: #0f172a;">
+                <i class="fas fa-arrow-trend-up"></i>
+            </div>
+            <div class="metric-content">
+                <p class="metric-label">Forecast Next Month</p>
+                <h3>KSh {{ forecast_next_month|floatformat:0 }}</h3>
+            </div>
+        </div>
+
+        <div class="metric-card">
+            <div class="metric-icon" style="background: rgba(34, 197, 94, 0.18); color: #15803d;">
+                <i class="fas fa-scale-balanced"></i>
+            </div>
+            <div class="metric-content">
+                <p class="metric-label">Gross Profit (Month)</p>
+                <h3>KSh {{ gross_profit|floatformat:0 }}</h3>
+                <small class="text-muted">Margin {{ gross_margin_pct|floatformat:1 }}%</small>
+            </div>
+        </div>
+
+        <div class="metric-card">
+            <div class="metric-icon" style="background: rgba(226, 232, 240, 0.7); color: #0f172a;">
+                <i class="fas fa-boxes-stacked"></i>
+            </div>
+            <div class="metric-content">
+                <p class="metric-label">Cold Storage Lots</p>
+                <h3>{{ storage_lot_count }}</h3>
+                <small>Tracked batches</small>
+            </div>
+        </div>
+
+        <div class="metric-card">
+            <div class="metric-icon" style="background: rgba(248, 113, 113, 0.18); color: #b91c1c;">
+                <i class="fas fa-triangle-exclamation"></i>
+            </div>
+            <div class="metric-content">
+                <p class="metric-label">Expiring Cold Lots</p>
+                <h3>{{ storage_expiring_count }}</h3>
+                <small>Next 7 days</small>
+            </div>
+        </div>
+    </div>
+
+    <div class="chart-card">
+        <h4>Monthly Milk Output {{ chart_year }}</h4>
+        <div style="position: relative; height: 320px;">
+            <canvas id="milkChart"></canvas>
+        </div>
+    </div>
+
+    <div class="drilldown-grid">
+        <div class="drilldown-card">
+            <h4>Revenue Trend</h4>
+            {% if monthly_revenue_series %}
+                {% for point in monthly_revenue_series %}
+                    <div class="d-flex justify-content-between py-1">
+                        <span class="text-muted">{{ point.label }}</span>
+                        <strong>KSh {{ point.value|floatformat:0 }}</strong>
+                    </div>
+                {% endfor %}
+            {% else %}
+                <p class="text-muted mb-0">No sales data yet.</p>
+            {% endif %}
+        </div>
+
+        <div class="drilldown-card">
+            <h4>Top Products</h4>
+            {% if top_products %}
+                {% for product in top_products %}
+                    <div class="top-product-row">
+                        <div>
+                            <div class="fw-semibold">{{ product.name }}</div>
+                            <small class="text-muted">SKU {{ product.sku }}</small>
+                        </div>
+                        <div class="text-end">
+                            <div>KSh {{ product.revenue|floatformat:0 }}</div>
+                            <small class="text-muted">{{ product.quantity|floatformat:0 }} units</small>
+                        </div>
+                    </div>
+                {% endfor %}
+            {% else %}
+                <p class="text-muted mb-0">Sales items will appear here once recorded.</p>
+            {% endif %}
+        </div>
+
+        <div class="drilldown-card">
+            <div class="quality-alert-header">
+                <div class="quality-alert-count">
+                    <small>Quality Alerts</small>
+                    <h4>{{ quality_alert_count|default:0 }} open</h4>
+                </div>
+                <span class="status-pill {% if quality_alert_count %}alert{% else %}ok{% endif %}">
+                    {% if quality_alert_count %}Attention{% else %}All clear{% endif %}
+                </span>
+            </div>
+            {% if quality_alerts %}
+                <div class="alert-panel mb-0 p-0 border-0 shadow-0">
+                    {% for alert in quality_alerts %}
+                        <div class="quality-alert-row">
+                            <div>
+                                <div class="alert-source">{{ alert.category }}</div>
+                                <p class="alert-message mb-0">{{ alert.message }}</p>
+                            </div>
+                            <span class="alert-pill {{ alert.severity }}">{{ alert.severity|title }}</span>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <p class="text-muted mb-0">No data quality issues detected.</p>
+            {% endif %}
+        </div>
+
+        <div class="drilldown-card">
+            <h4>Cold Storage Watchlist</h4>
+            {% if storage_expiring_preview %}
+                {% for lot in storage_expiring_preview %}
+                    <div class="storage-row">
+                        <div class="d-flex justify-content-between">
+                            <strong>{{ lot.product }}</strong>
+                            {% if lot.expiry_date <= today %}
+                                <span class="status-pill alert">Expired</span>
+                            {% elif lot.expiry_date <= storage_warning_threshold %}
+                                <span class="status-pill alert">{{ lot.expiry_date|date:"M j" }}</span>
+                            {% else %}
+                                <span class="status-pill ok">{{ lot.expiry_date|date:"M j" }}</span>
+                            {% endif %}
+                        </div>
+                        <div class="d-flex justify-content-between small text-muted">
+                            <span>{{ lot.location.name }}</span>
+                            <span>{{ lot.quantity|floatformat:0 }} units</span>
+                        </div>
+                    </div>
+                {% endfor %}
+            {% else %}
+                <p class="text-muted mb-0">All cold storage lots are healthy for the next week.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block footer_text %}
+<div class="text-center small text-muted">
+    © {% now "Y" %} Nawa Sons Dairy • Precision-driven dairy analytics
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const chartElement = document.getElementById("milkChart");
+        if (!chartElement) return;
+
+        // Bind Django data directly into JavaScript
+        const milkData = {{ monthly_output_data|safe }};
+        const chartYear = "{{ chart_year }}";
+
+        const ctx = chartElement.getContext("2d");
+
+        // Gradient fill for bars
+        const gradient = ctx.createLinearGradient(0, 0, 0, 320);
+        gradient.addColorStop(0, "rgba(9, 64, 103, 0.95)");
+        gradient.addColorStop(1, "rgba(9, 64, 103, 0.4)");
+
+        new Chart(ctx, {
+            type: "bar",
+            data: {
+                labels: ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"],
+                datasets: [{
+                    label: "Liters Collected",
+                    data: milkData,
+                    backgroundColor: gradient,
+                    borderColor: "rgba(9, 64, 103, 1)",
+                    borderWidth: 1,
+                    borderRadius: 8,
+                    maxBarThickness: 32,
+                    hoverBackgroundColor: "rgba(9, 64, 103, 1)"
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    title: {
+                        display: true,
+                        text: "Monthly Milk Output " + chartYear,
+                        font: { size: 16, weight: "600" },
+                        color: "#1f2430",
+                        padding: { bottom: 20 }
+                    },
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        backgroundColor: "rgba(31, 36, 48, 0.95)",
+                        titleFont: { size: 13 },
+                        bodyFont: { size: 12 },
+                        padding: 12,
+                        cornerRadius: 8,
+                        callbacks: {
+                            label: function(context) {
+                                const value = context.parsed.y || 0;
+                                return value.toLocaleString() + " liters";
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: "Liters (L)",
+                            font: { size: 12, weight: "500" },
+                            color: "#6f7f92"
+                        },
+                        ticks: {
+                            callback: function(value) {
+                                return value.toLocaleString() + " L";
+                            },
+                            color: "#6f7f92",
+                            font: { size: 11 }
+                        },
+                        grid: {
+                            color: "rgba(148, 163, 184, 0.15)",
+                            drawBorder: false
+                        }
+                    },
+                    x: {
+                        title: {
+                            display: true,
+                            text: "Month",
+                            font: { size: 12, weight: "500" },
+                            color: "#6f7f92"
+                        },
+                        ticks: {
+                            color: "#6f7f92",
+                            font: { size: 11 }
+                        },
+                        grid: {
+                            display: false
+                        }
+                    }
+                },
+                animation: {
+                    duration: 800,
+                    easing: "easeOutQuart"
+                }
+            }
+        });
+    });
+</script>
 {% endblock %}

@@ -1,0 +1,75 @@
+{% load production_filters %}
+
+{% if form.non_field_errors %}
+  <div class="alert alert-danger">
+    {% for error in form.non_field_errors %}
+      {{ error }}{% if not forloop.last %}<br>{% endif %}
+    {% endfor %}
+  </div>
+{% endif %}
+{% for field in form %}
+  {% if field.is_hidden %}
+    {{ field }}
+  {% elif field.field.widget.input_type == 'checkbox' %}
+    <div class="form-check mb-3">
+      {{ field|add_class:"form-check-input" }}
+      <label class="form-check-label" for="{{ field.id_for_label }}">
+        {{ field.label }}
+        {% if field.field.required %}<span class="text-danger">*</span>{% endif %}
+      </label>
+      {% if field.help_text %}
+        <small class="form-text text-muted d-block">{{ field.help_text }}</small>
+      {% endif %}
+      {% if field.errors %}
+        <div class="text-danger field-errors mt-1">
+          {% for error in field.errors %}
+            {{ error }}{% if not forloop.last %}<br>{% endif %}
+          {% endfor %}
+        </div>
+      {% endif %}
+    </div>
+  {% elif field.field.widget.input_type == 'radio' %}
+    <div class="mb-3">
+      <span class="form-label d-block">
+        {{ field.label }}
+        {% if field.field.required %}<span class="text-danger">*</span>{% endif %}
+      </span>
+      <div class="d-flex flex-column gap-1">
+        {% for subwidget in field %}
+          <div class="form-check">
+            {{ subwidget.tag }}
+            <label class="form-check-label" for="{{ subwidget.id_for_label }}">{{ subwidget.choice_label }}</label>
+          </div>
+        {% endfor %}
+      </div>
+      {% if field.help_text %}
+        <small class="form-text text-muted">{{ field.help_text }}</small>
+      {% endif %}
+      {% if field.errors %}
+        <div class="text-danger field-errors mt-1">
+          {% for error in field.errors %}
+            {{ error }}{% if not forloop.last %}<br>{% endif %}
+          {% endfor %}
+        </div>
+      {% endif %}
+    </div>
+  {% else %}
+    <div class="mb-3">
+      <label class="form-label" for="{{ field.id_for_label }}">
+        {{ field.label }}
+        {% if field.field.required %}<span class="text-danger">*</span>{% endif %}
+      </label>
+      {{ field|add_class:"form-control" }}
+      {% if field.help_text %}
+        <small class="form-text text-muted">{{ field.help_text }}</small>
+      {% endif %}
+      {% if field.errors %}
+        <div class="text-danger field-errors mt-1">
+          {% for error in field.errors %}
+            {{ error }}{% if not forloop.last %}<br>{% endif %}
+          {% endfor %}
+        </div>
+      {% endif %}
+    </div>
+  {% endif %}
+{% endfor %}

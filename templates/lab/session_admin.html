@@ -1,0 +1,160 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container py-4" style="max-width: 980px;">
+  <header class="mb-4">
+    <p class="text-uppercase text-muted small mb-1" style="letter-spacing:0.2rem;">Collection orchestration</p>
+    <div class="d-flex flex-wrap justify-content-between gap-3 align-items-end">
+      <div>
+        <h1 class="mb-0">Session window control</h1>
+        <p class="text-muted mb-0">Adjust the opening and closing times for every intake session, then override batch states when operations need a manual nudge.</p>
+      </div>
+      <a href="{% url 'lab:dashboard' %}" class="btn btn-outline-secondary">Back to lab dashboard</a>
+    </div>
+  </header>
+
+  <div class="card shadow-sm mb-4">
+    <div class="card-header bg-light d-flex justify-content-between flex-wrap gap-2 align-items-center">
+      <div>
+        <p class="text-uppercase text-muted small mb-0">Session templates</p>
+        <h2 class="h5 mb-0">Edit start and end times</h2>
+      </div>
+      <span class="badge text-bg-secondary">{{ window_rows|length }} windows</span>
+    </div>
+    <form method="post" class="card-body">
+      {% csrf_token %}
+      <input type="hidden" name="form_type" value="window">
+      {{ formset.management_form }}
+      <div class="table-responsive">
+        <table class="table align-middle">
+          <thead class="table-light">
+            <tr>
+              <th style="width:240px;">Session</th>
+              <th style="width:160px;">Start time</th>
+              <th style="width:160px;">End time</th>
+              <th>Notes</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for form, meta in window_rows %}
+            <tr>
+              <td>
+                <strong>{{ meta.label }}</strong>
+                <div class="text-muted small">Default {{ meta.default_start|time:"H:i" }} – {{ meta.default_end|time:"H:i" }}</div>
+                {% if meta.override %}
+                  <span class="badge text-bg-warning text-dark">Override active</span>
+                {% endif %}
+                {% if meta.updated_at %}
+                  <div class="text-muted small">Last updated {{ meta.updated_at|date:"M d, H:i" }}{% if meta.updated_by %} by {{ meta.updated_by.get_full_name|default:meta.updated_by.username }}{% endif %}</div>
+                {% endif %}
+                {{ form.session_key }}
+              </td>
+              <td>
+                {{ form.start_time }}
+                {% for error in form.start_time.errors %}
+                  <div class="text-danger small">{{ error }}</div>
+                {% endfor %}
+              </td>
+              <td>
+                {{ form.end_time }}
+                {% for error in form.end_time.errors %}
+                  <div class="text-danger small">{{ error }}</div>
+                {% endfor %}
+              </td>
+              <td>
+                <button type="button"
+                        class="btn btn-link btn-sm p-0 reset-window"
+                        data-start="{{ form.start_time.id_for_label }}"
+                        data-end="{{ form.end_time.id_for_label }}"
+                        data-default-start="{{ meta.default_start|time:'H:i' }}"
+                        data-default-end="{{ meta.default_end|time:'H:i' }}">
+                  Reset to default
+                </button>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      <div class="d-flex justify-content-end gap-2">
+        <button type="submit" class="btn btn-primary">Save window changes</button>
+      </div>
+    </form>
+  </div>
+
+  <section class="card shadow-sm">
+    <div class="card-header bg-light d-flex flex-wrap justify-content-between gap-3 align-items-center">
+      <div>
+        <p class="text-uppercase text-muted small mb-0">Batch overrides</p>
+        <h2 class="h5 mb-0">Manually open or close sessions</h2>
+      </div>
+      <form method="get" class="d-flex gap-2 align-items-center">
+        <label for="collection_date" class="text-muted small mb-0">Collection date</label>
+        <input type="date" class="form-control form-control-sm" id="collection_date" name="collection_date" value="{{ selected_date|date:'Y-m-d' }}">
+        <button type="submit" class="btn btn-outline-secondary btn-sm">Go</button>
+      </form>
+    </div>
+    <div class="card-body">
+      <div class="row g-3">
+        {% for card in session_cards %}
+        <div class="col-md-4">
+          <article class="border rounded p-3 h-100">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+              <h3 class="h6 mb-0">{{ card.meta.label }}</h3>
+              <span class="badge {% if card.is_locked %}text-bg-secondary{% elif card.is_open %}text-bg-success{% else %}text-bg-warning text-dark{% endif %}">
+                {{ card.state|title }}
+              </span>
+            </div>
+            <p class="mb-1 small text-muted">Window {{ card.meta.start|time:"H:i" }} – {{ card.meta.end|time:"H:i" }}</p>
+            <p class="mb-2 small text-muted">Batch {% if card.batch_id %}#{{ card.batch_id }}{% else %}not opened{% endif %}</p>
+            <p class="fw-semibold mb-2">{{ card.litres|floatformat:1 }} L captured</p>
+            <div class="d-flex flex-column gap-1 mb-3">
+              <small class="text-muted">Opened: {{ card.opened_at|date:"H:i"|default:"—" }}</small>
+              <small class="text-muted">Closed: {{ card.closed_at|date:"H:i"|default:"—" }}</small>
+            </div>
+            {% if perms.lab.change_batch %}
+            <form method="post" action="{% url 'lab:collection_session_toggle' %}">
+              {% csrf_token %}
+              <input type="hidden" name="session" value="{{ card.meta.key }}">
+              <input type="hidden" name="collection_date" value="{{ selected_date|date:'Y-m-d' }}">
+              <input type="hidden" name="next" value="{% url 'lab:session_admin' %}">
+              {% if card.is_locked %}
+                <button type="button" class="btn btn-outline-secondary w-100" disabled>Locked after lab test</button>
+              {% elif card.is_open %}
+                <button type="submit" name="action" value="close" class="btn btn-outline-danger w-100">Close batch</button>
+              {% else %}
+                <button type="submit" name="action" value="open" class="btn btn-outline-success w-100">Reopen batch</button>
+              {% endif %}
+            </form>
+            {% else %}
+              <p class="text-muted small">Read-only access</p>
+            {% endif %}
+          </article>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </section>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{{ block.super }}
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    document.querySelectorAll('.reset-window').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        const startId = btn.dataset.start;
+        const endId = btn.dataset.end;
+        const startInput = document.getElementById(startId);
+        const endInput = document.getElementById(endId);
+        if (startInput) {
+          startInput.value = btn.dataset.defaultStart;
+        }
+        if (endInput) {
+          endInput.value = btn.dataset.defaultEnd;
+        }
+      });
+    });
+  });
+</script>
+{% endblock %}

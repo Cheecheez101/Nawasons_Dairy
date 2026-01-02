@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}Delete Storage Record{% endblock %}
+
+{% block content %}
+<div class="container" style="max-width: 640px;">
+  <div class="card border-danger shadow-sm">
+    <div class="card-header bg-danger text-white">
+      <h2 class="h5 mb-0">Confirm removal</h2>
+    </div>
+    <div class="card-body">
+      <p>Delete storage record <strong>#{{ lot.storage_id }}</strong> for <strong>{{ lot.product }}</strong>?</p>
+      <p class="text-muted mb-0">This action cannot be undone and will free up the associated storage capacity.</p>
+    </div>
+    <div class="card-footer d-flex justify-content-between">
+      <a href="{% url 'storage:storage_list' %}" class="btn btn-outline-secondary">Cancel</a>
+      <form method="post">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-danger">Yes, delete</button>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

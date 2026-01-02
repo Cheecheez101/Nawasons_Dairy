@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Cow, MilkYield, ProductPrice, ProductPriceChangeLog
+from .models import Cow, MilkYield, ProductPrice, ProductPriceChangeLog, ProductionBatch
 
 @admin.register(Cow)
 class CowAdmin(admin.ModelAdmin):
@@ -25,3 +25,11 @@ class ProductPriceChangeLogAdmin(admin.ModelAdmin):
     list_filter = ('changed_at',)
     search_fields = ('product_price__product_name', 'product_price__sku', 'changed_by__username')
     readonly_fields = ('product_price', 'old_price', 'new_price', 'changed_by', 'changed_at')
+
+
+@admin.register(ProductionBatch)
+class ProductionBatchAdmin(admin.ModelAdmin):
+    list_display = ('id', 'product_type', 'sku', 'source_tank', 'status', 'produced_at')
+    list_filter = ('status', 'product_type', 'source_tank')
+    search_fields = ('sku', 'product_type', 'source_tank')
+    ordering = ('-produced_at',)

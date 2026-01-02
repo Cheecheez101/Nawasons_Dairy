@@ -1,25 +1,55 @@
 {% extends 'base.html' %}
 {% block content %}
-<h1>Record Sale</h1>
-<form method="post">
-  {% csrf_token %}
-  {{ form.as_p }}
-  {{ formset.management_form }}
-  {% for form in formset %}
-    <fieldset>
-      <legend>Item {{ forloop.counter }}</legend>
-      {{ form.inventory_item.label_tag }} {{ form.inventory_item }}
-      {{ form.quantity.label_tag }} {{ form.quantity }}
-    </fieldset>
-  {% endfor %}
-  <button type="submit">Save</button>
-</form>
-<section>
-  <h2>Add Customer</h2>
-  <form method="post">
-    {% csrf_token %}
-    {{ customer_form.as_p }}
-    <button type="submit" name="add_customer">Add Customer</button>
-  </form>
-</section>
+<div class="container py-4">
+  <div class="row g-4">
+    <div class="col-lg-8">
+      <div class="card shadow-sm h-100">
+        <div class="card-header bg-light">
+          <h1 class="h4 mb-0">Record Sale</h1>
+        </div>
+        <div class="card-body">
+          <form method="post" class="form-styled">
+            {% csrf_token %}
+            {% include "partials/form_fields.html" with form=form %}
+
+            <hr>
+            <h2 class="h5">Line Items</h2>
+            <p class="text-muted">Capture each product included in this sale.</p>
+
+            {{ formset.management_form }}
+            {% for item_form in formset %}
+              <div class="border rounded-3 p-3 mb-3 bg-light-subtle">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                  <h3 class="h6 mb-0">Item {{ forloop.counter }}</h3>
+                </div>
+                {% include "partials/form_fields.html" with form=item_form %}
+              </div>
+            {% endfor %}
+
+            <div class="d-flex justify-content-end gap-2">
+              <button type="submit" class="btn btn-primary">Save Sale</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-4">
+      <div class="card shadow-sm h-100">
+        <div class="card-header bg-light">
+          <h2 class="h5 mb-0">Quick Add Customer</h2>
+        </div>
+        <div class="card-body">
+          <form method="post" class="form-styled">
+            {% csrf_token %}
+            {% include "partials/form_fields.html" with form=customer_form %}
+            <div class="d-flex justify-content-end">
+              <button type="submit" name="add_customer" class="btn btn-outline-primary">Add Customer</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
 {% endblock %}

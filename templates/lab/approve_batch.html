@@ -1,36 +1,84 @@
 {% extends "base.html" %}
+{% block title %}Approve Production Batch{% endblock %}
 
 {% block content %}
-<div class="container mt-4">
+<div class="container" style="max-width: 960px;">
   <h2>Approve Production Batch</h2>
 
-  <p>
-    <strong>Batch ID:</strong> {{ batch.id }} <br>
-    <strong>Milk Source:</strong> Tank {{ batch.source_tank }} <br>
-    <strong>Litres Processed:</strong> {{ batch.quantity_produced }} <br>
-    <strong>Created by:</strong> {{ batch.processed_by }} on {{ batch.produced_at }}
-  </p>
+  <!-- Batch summary -->
+  <section class="card">
+    <h3>Batch Summary</h3>
+    <div class="grid2">
+      <div><strong>ID:</strong> {{ batch.id }}</div>
+      <div><strong>Product:</strong> {{ batch.product_type|title }}</div>
+      <div><strong>SKU:</strong> {{ batch.sku }}</div>
+      <div><strong>Quantity:</strong> {{ batch.quantity_produced }}</div>
+      <div><strong>Litres used:</strong> {{ batch.liters_used }}</div>
+      <div><strong>Status:</strong> {{ batch.status|title }}</div>
+      <div><strong>Produced at:</strong> {{ batch.produced_at }}</div>
+      <div><strong>Processed by:</strong> {{ batch.processed_by }}</div>
+    </div>
+  </section>
 
-  <hr>
+  <!-- Approval form -->
+  <section class="card">
+    <h3>Lab Approval</h3>
+    <form method="post">
+      {% csrf_token %}
+      <div class="grid2">
+        <div>
+          <label><strong>Approval Result:</strong></label>
+          {{ form.overall_result }} {{ form.overall_result.errors }}
+        </div>
+        <div>
+          <label><strong>Expiry Date:</strong></label>
+          {{ form.expiry_date }} {{ form.expiry_date.errors }}
+        </div>
+        <div>
+          <label><strong>Shelf life days (optional):</strong></label>
+          {{ form.shelf_life_days }} {{ form.shelf_life_days.errors }}
+        </div>
+      </div>
 
-  <form method="post" class="form">
-    {% csrf_token %}
-    {{ form.as_p }}
+      <div style="margin-top:12px;">
+        <label><strong>Remarks:</strong></label>
+        {{ form.remarks }} {{ form.remarks.errors }}
+      </div>
 
-    <button type="submit" class="btn btn-success">Save Approval</button>
-    <a href="{% url 'lab:tank_yield_tests' tank=batch.source_tank %}" class="btn btn-secondary">Cancel</a>
-  </form>
+      <!-- Storage assignment -->
+      <h3 style="margin-top:20px;">Storage Assignment</h3>
+      <div class="grid2">
+        <div>
+          <label><strong>Storage Location:</strong></label>
+          {{ form.storage_location }} {{ form.storage_location.errors }}
+        </div>
+        <div>
+          <label><strong>Storage Status:</strong></label>
+          {{ form.storage_status }} {{ form.storage_status.errors }}
+        </div>
+        <div>
+          <label><strong>Destination Tank:</strong></label>
+          {{ form.storage_tank }}
+          <small class="text-muted d-block">{{ form.storage_tank.help_text }}</small>
+          {{ form.storage_tank.errors }}
+        </div>
+      </div>
 
-  <hr>
+      <div style="margin-top:12px;">
+        <label><strong>Quantity to Move:</strong></label>
+        {{ form.storage_quantity }} {{ form.storage_quantity.errors }}
+      </div>
 
-  {% if batch.lab_approval %}
-    <h4>Existing Approval</h4>
-    <p>
-      Result: {{ batch.lab_approval.overall_result }} <br>
-      Expiry: {{ batch.lab_approval.expiry_date }} <br>
-      Approved by: {{ batch.lab_approval.approved_by }} <br>
-      Remarks: {{ batch.lab_approval.remarks }}
-    </p>
-  {% endif %}
+      <div style="margin-top:12px;">
+        <label><strong>Audit Notes:</strong></label>
+        {{ form.audit_notes }} {{ form.audit_notes.errors }}
+      </div>
+
+      <div style="margin-top:20px; display:flex; gap:8px;">
+        <button type="submit" class="btn btn-primary">Save Approval</button>
+        <a href="{% url 'lab:batch_list' %}" class="btn btn-secondary">Back</a>
+      </div>
+    </form>
+  </section>
 </div>
 {% endblock %}

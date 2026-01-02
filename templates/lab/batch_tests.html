@@ -1,0 +1,172 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Batch Tests Board{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  <div class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-4">
+    <div>
+      <p class="text-uppercase text-muted small mb-1" style="letter-spacing:0.15rem;">Lab workflow</p>
+      <h1 class="h3 mb-1">Batch Tests Board</h1>
+      <p class="text-muted mb-0">Assign storage tanks and track batches waiting for lab approval.</p>
+    </div>
+    <div class="text-end">
+      <span class="badge bg-primary">{{ closed_batches|length }} waiting</span>
+      <span class="badge bg-success ms-2">{{ available_tanks|length }} tanks</span>
+    </div>
+  </div>
+
+  <div class="row g-3 mb-4">
+    <div class="col-sm-6 col-lg-3">
+      <div class="border rounded-4 p-3 h-100">
+        <p class="text-uppercase text-muted small mb-1">Closed</p>
+        <strong class="fs-3">{{ stats.closed }}</strong>
+      </div>
+    </div>
+    <div class="col-sm-6 col-lg-3">
+      <div class="border rounded-4 p-3 h-100">
+        <p class="text-uppercase text-muted small mb-1">Awaiting Test</p>
+        <strong class="fs-3 text-warning">{{ stats.awaiting_test }}</strong>
+      </div>
+    </div>
+    <div class="col-sm-6 col-lg-3">
+      <div class="border rounded-4 p-3 h-100">
+        <p class="text-uppercase text-muted small mb-1">Assignable Tanks</p>
+        <strong class="fs-3 text-success">{{ stats.assignable }}</strong>
+      </div>
+    </div>
+    <div class="col-sm-6 col-lg-3">
+      <div class="border rounded-4 p-3 h-100">
+        <p class="text-uppercase text-muted small mb-1">Rejected</p>
+        <strong class="fs-3 text-danger">{{ stats.rejected }}</strong>
+      </div>
+    </div>
+  </div>
+
+  <form method="get" class="border rounded-4 p-3 mb-4">
+    <div class="row g-3 align-items-end">
+      <div class="col-md-3">
+        <label for="status" class="form-label text-uppercase small">Lab status</label>
+        <select class="form-select" id="status" name="status">
+          <option value="">All lab states</option>
+          {% for value,label in filter_options.statuses %}
+            <option value="{{ value }}" {% if filters.status == value %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-3">
+        <label for="tank" class="form-label text-uppercase small">Source tank</label>
+        <select class="form-select" id="tank" name="tank">
+          <option value="">All tanks</option>
+          {% for tank in filter_options.tanks %}
+            <option value="{{ tank }}" {% if filters.tank == tank %}selected{% endif %}>{{ tank }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-3">
+        <label for="product" class="form-label text-uppercase small">Product</label>
+        <select class="form-select" id="product" name="product">
+          <option value="">All products</option>
+          {% for value,label in filter_options.products %}
+            <option value="{{ value }}" {% if filters.product == value %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-3">
+        <label for="window" class="form-label text-uppercase small">Production date</label>
+        <input type="date" id="window" name="window" class="form-control" value="{{ filters.window }}" />
+      </div>
+      <div class="col-12 d-flex gap-2">
+        <button type="submit" class="btn btn-primary">Apply filters</button>
+        <a href="{% url 'lab:batch_tests' %}" class="btn btn-outline-secondary">Reset</a>
+      </div>
+    </div>
+  </form>
+
+  {% if oldest_batch %}
+  <div class="alert alert-info rounded-4 d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <strong>Oldest batch waiting:</strong> {{ oldest_batch.code }} • {{ oldest_batch.get_product_type_display }} • Tank {{ oldest_batch.source_tank|default:"Unassigned" }}
+    </div>
+    <a href="{{ oldest_batch.test_url }}" class="btn btn-sm btn-light">Review</a>
+  </div>
+  {% endif %}
+
+  <div class="card shadow-sm">
+    <div class="card-header bg-light">
+      <h2 class="h5 mb-0">Batches awaiting storage assignment</h2>
+    </div>
+    <div class="card-body p-0">
+      {% if closed_batches %}
+      <div class="table-responsive">
+        <table class="table align-middle mb-0">
+          <thead class="table-light">
+            <tr>
+              <th>Batch</th>
+              <th>Product</th>
+              <th>Volume</th>
+              <th>Source tank</th>
+              <th>Lab status</th>
+              <th>Last action</th>
+              <th style="width: 320px;">Storage assignment</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for batch in closed_batches %}
+            <tr>
+              <td>
+                <strong>{{ batch.code }}</strong>
+                <div class="text-muted small">SKU {{ batch.sku }}</div>
+              </td>
+              <td>
+                {{ batch.get_product_type_display }}
+                <div class="text-muted small">Produced {{ batch.closed_at|date:"Y-m-d H:i" }}</div>
+              </td>
+              <td>{{ batch.quantity_produced }}</td>
+              <td>{{ batch.source_tank|default:"Unassigned" }}</td>
+              <td>
+                {% if batch.lab_state == "approved" %}
+                  <span class="badge bg-success">{{ batch.lab_state_label }}</span>
+                {% elif batch.lab_state == "rejected" %}
+                  <span class="badge bg-danger">{{ batch.lab_state_label }}</span>
+                {% else %}
+                  <span class="badge bg-warning text-dark">{{ batch.lab_state_label }}</span>
+                {% endif %}
+              </td>
+              <td>
+                {% if batch.last_tested_at %}
+                  <div class="small">{{ batch.last_tested_at|date:"Y-m-d H:i" }}</div>
+                  <div class="text-muted small">{{ batch.last_tested_by|default:"Lab" }}</div>
+                {% else %}
+                  <span class="text-muted small">Awaiting first test</span>
+                {% endif %}
+              </td>
+              <td>
+                <form method="post" class="d-flex flex-column flex-lg-row gap-2 align-items-lg-end">
+                  {% csrf_token %}
+                  <input type="hidden" name="batch_id" value="{{ batch.id }}" />
+                  <div class="w-100">
+                    <label for="storage_tank_{{ batch.id }}" class="form-label small text-uppercase">Storage tank</label>
+                    <select class="form-select" id="storage_tank_{{ batch.id }}" name="storage_tank" required>
+                      <option value="" disabled {% if not batch.preferred_tank %}selected{% endif %}>Select tank</option>
+                      {% for tank in filter_options.tanks %}
+                        <option value="{{ tank }}" {% if batch.preferred_tank == tank or batch.source_tank == tank %}selected{% endif %}>{{ tank }}</option>
+                      {% endfor %}
+                    </select>
+                  </div>
+                  <button type="submit" class="btn btn-primary align-self-lg-end">Assign</button>
+                </form>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <div class="p-4 text-center text-muted">No batches need storage assignments.</div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

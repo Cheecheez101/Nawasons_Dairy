@@ -2,56 +2,154 @@
 
 {% block content %}
 <div class="container mt-4">
-  <h1 class="mb-3">Cow Dashboard</h1>
-
-  <!-- Quick actions -->
-  <div class="mb-3">
-    <a class="btn btn-primary" href="{% url 'production:cow_create' %}">➕ Register Cow</a>
-    <a class="btn btn-secondary" href="{% url 'production:yield_create' %}">🍼 Record New Yield</a>
+  <div class="d-flex flex-wrap align-items-center gap-3 mb-3">
+    <div>
+      <h1 class="mb-1">Cow Dashboard</h1>
+      <p class="text-muted mb-0">Monitor herd health and drill into every recorded yield.</p>
+    </div>
+    <div class="ms-auto d-flex flex-wrap gap-2">
+      <a class="btn btn-primary" href="{% url 'production:cow_create' %}">➕ Register Cow</a>
+      <a class="btn btn-secondary" href="{% url 'production:yield_create' %}">🍼 Record New Yield</a>
+    </div>
   </div>
 
-  <!-- Cow table -->
-  <table class="table table-striped">
-    <thead>
-      <tr>
-        <th>Cow Name</th>
-        <th>Breed</th>
-        <th>Health</th>
-        <th>Latest Yield (L)</th>
-        <th>Lab Tests</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for cow in cows %}
-      <tr class="{% if cow.latest_yield and cow.latest_yield.storage_level_percentage > 90 %}table-warning{% endif %}">
-        <td>{{ cow.name}}</td>
-        <td>{{ cow.breed }}</td>
-        <td>{{ cow.get_health_status_display }}</td>
-        <td>
-          {% if cow.latest_yield %}
-            {{ cow.latest_yield.total_yield }} L
-            (Storage {{ cow.latest_yield.storage_level_percentage }}%)
-          {% else %}
-            -
-          {% endif %}
-        </td>
-        <td>
-          {% if cow.latest_yield %}
-            {% if perms.lab.view_rawmilktest %}
-              <a class="btn btn-info btn-sm"
-                 href="{% url 'lab:milk_yield_tests' yield_id=cow.latest_yield.id %}">
-                 📊 View Tests
-              </a>
-            {% endif %}
-          {% else %}
-            <span class="text-muted">No yield yet</span>
-          {% endif %}
-        </td>
-      </tr>
-      {% empty %}
-      <tr><td colspan="5">No cows registered yet.</td></tr>
-      {% endfor %}
-    </tbody>
-  </table>
+  <div class="card shadow-sm mb-4">
+    <div class="card-header bg-white">
+      <h2 class="h5 mb-0">Cow overview</h2>
+    </div>
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-striped align-middle mb-0">
+          <thead class="table-light">
+            <tr>
+              <th>Cow name</th>
+              <th>Breed</th>
+              <th>Health</th>
+              <th>Latest yield (L)</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for cow in cows %}
+            <tr class="{% if cow.latest_yield and cow.latest_yield.storage_level_percentage > 90 %}table-warning{% endif %}">
+              <td>{{ cow.name }}</td>
+              <td>{{ cow.breed }}</td>
+              <td>{{ cow.get_health_status_display }}</td>
+              <td>
+                {% if cow.latest_yield %}
+                  {{ cow.latest_yield.total_yield }} L
+                  <small class="text-muted">(Storage {{ cow.latest_yield.storage_level_percentage }}%)</small>
+                {% else %}
+                  <span class="text-muted">—</span>
+                {% endif %}
+              </td>
+            </tr>
+            {% empty %}
+            <tr>
+              <td colspan="4" class="text-center text-muted py-4">No cows registered yet.</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <section>
+    <div class="d-flex flex-wrap align-items-center gap-3 mb-3">
+      <div>
+        <h2 class="h4 mb-0">Milk yield log</h2>
+        <small class="text-muted">{{ yield_summary.count }} entries · {{ yield_summary.volume|floatformat:2 }} L captured</small>
+      </div>
+      <div class="ms-auto d-flex flex-wrap gap-2">
+        <a class="btn btn-outline-secondary" href="{% url 'production:cow_list' %}">Reset filters</a>
+        <a class="btn btn-success" href="{% url 'production:yield_export' %}{% if request.GET %}?{{ request.GET.urlencode }}{% endif %}">Export Excel</a>
+      </div>
+    </div>
+
+    <form method="get" id="yield-filter-form" class="card card-body shadow-sm mb-3">
+      <div class="row g-3 align-items-end">
+        <div class="col-md-4">
+          <label for="search" class="form-label">Search cow</label>
+          <input type="text" id="search" name="q" class="form-control" placeholder="Name or ear tag" value="{{ filters.search }}">
+        </div>
+        <div class="col-md-3">
+          <label for="date_from" class="form-label">From date</label>
+          <input type="date" id="date_from" name="date_from" class="form-control" value="{{ filters.date_from }}">
+        </div>
+        <div class="col-md-3">
+          <label for="date_to" class="form-label">To date</label>
+          <input type="date" id="date_to" name="date_to" class="form-control" value="{{ filters.date_to }}">
+        </div>
+        <div class="col-md-2">
+          <label class="form-label text-white">Apply</label>
+          <button type="submit" class="btn btn-primary w-100">Apply filters</button>
+        </div>
+      </div>
+      <hr class="my-3">
+      <div>
+        <span class="text-muted small d-block mb-2">Session filter</span>
+        <div class="btn-group" role="group" aria-label="Session filter">
+          <input type="radio" class="btn-check" name="session" id="session-all" value="" {% if not filters.session %}checked{% endif %}>
+          <label class="btn btn-outline-secondary" for="session-all">All</label>
+          {% for key, label in session_choices %}
+            <input type="radio" class="btn-check" name="session" id="session-{{ key }}" value="{{ key }}" {% if filters.session == key %}checked{% endif %}>
+            <label class="btn btn-outline-secondary" for="session-{{ key }}">{{ label }}</label>
+          {% endfor %}
+        </div>
+      </div>
+    </form>
+
+    <div class="card shadow-sm">
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead class="table-light">
+            <tr>
+              <th>Milk clerk</th>
+              <th>Cow</th>
+              <th>Breed</th>
+              <th>Session</th>
+              <th>Date &amp; time</th>
+              <th>Yield (L)</th>
+              <th class="text-end">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for entry in yield_rows %}
+            <tr>
+              <td>
+                {% if entry.recorded_by %}
+                  {{ entry.recorded_by.get_full_name|default:entry.recorded_by|default:"—" }}
+                {% else %}
+                  <span class="text-muted">—</span>
+                {% endif %}
+              </td>
+              <td>
+                <div class="fw-semibold">{{ entry.cow.name|default:entry.cow.cow_id }}</div>
+                <small class="text-muted">{{ entry.cow.cow_id }}</small>
+              </td>
+              <td>{{ entry.cow.breed }}</td>
+              <td>{{ entry.get_session_display }}</td>
+              <td>{{ entry.recorded_at|date:"M d, Y H:i" }}</td>
+              <td>{{ entry.yield_litres|floatformat:2 }}</td>
+              <td class="text-end">
+                <div class="d-flex justify-content-end gap-2">
+                  <a class="btn btn-sm btn-outline-primary" href="{% url 'production:yield_edit' entry.id %}">Edit</a>
+                  <form method="post" action="{% url 'production:yield_delete' entry.id %}" onsubmit="return confirm('Delete this milk yield entry?');">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
+                  </form>
+                </div>
+              </td>
+            </tr>
+            {% empty %}
+            <tr>
+              <td colspan="7" class="text-center text-muted py-4">No yield entries match the selected filters.</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
 </div>
 {% endblock %}

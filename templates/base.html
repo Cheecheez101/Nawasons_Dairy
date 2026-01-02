@@ -6,255 +6,379 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Nawa Sons Dairy</title>
+  <link rel="icon" type="image/png" href="{% static 'img/NAWASONS_LOGO.png' %}">
   <link rel="stylesheet" href="{% static 'css/bootstrap.min.css' %}">
   <!-- Bootstrap Icons -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+  <!-- Font Awesome for dashboard icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
   <!-- Load fonts: Roboto (primary), Lato/Open Sans (secondary), Dancing Script (branding) -->
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=Lato:wght@400;600;700&family=Open+Sans:wght@400;600;700&family=Dancing+Script&display=swap">
   <!-- Custom fonts CSS (defines font stacks and optional @font-face for Rustic Harvest / Nora Fields) -->
   <link rel="stylesheet" href="{% static 'css/custom_fonts.css' %}">
   <!-- Custom sidebar CSS -->
   <link rel="stylesheet" href="{% static 'css/sidebar.css' %}">
+  <link rel="stylesheet" href="{% static 'css/forms.css' %}">
+  <style>
+    .column-filter-row th { background-color: #fafafa; }
+    .column-filter-row input {
+      font-size: 0.85rem;
+      min-width: 100px;
+    }
+    .column-filter-row .disabled-filter {
+      background-color: transparent;
+      border: none;
+      box-shadow: none;
+    }
+  </style>
+  {% block extra_css %}{% endblock %}
 </head>
-<body>
-  <div class="d-flex">
-    <!-- Sidebar for desktop -->
-    <nav id="sidebar" class="d-none d-md-block bg-light border-end position-fixed" style="width: 250px; height: 100vh; top: 0; left: 0; overflow-y: auto; z-index: 1000;">
-      <div class="p-3 border-bottom">
-        <h5 class="brand-font text-center">Nawa Sons Dairy</h5>
-      </div>
-      <ul class="nav flex-column p-2">
-        {% if user.is_authenticated %}
-          <li class="nav-item">
-            <a class="nav-link" href="/"><i class="bi bi-house-door"></i> Dashboard</a>
-          </li>
-          <!-- Customers -->
-          {% if perms.customers.add_customer %}
-            <li class="nav-item">
-              <a class="nav-link" href="#" data-bs-toggle="collapse" data-bs-target="#customersCollapse">👥 Customers <i class="bi bi-chevron-down float-end"></i></a>
-              <div class="collapse" id="customersCollapse">
-                <ul class="nav flex-column ms-3">
-                  <li class="nav-item"><a class="nav-link" href="{% url 'customers:index' %}">View Customers</a></li>
-                  <li class="nav-item"><a class="nav-link" href="{% url 'customers:create' %}">Add Customer</a></li>
+{% with current_url_name=request.resolver_match.url_name %}
+<body class="{% if current_url_name != 'login' %}has-top-nav{% endif %}">
+  {% if current_url_name != 'login' %}
+  <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top shadow-sm">
+    <div class="container-fluid">
+      <a class="navbar-brand brand-font text-uppercase small" href="/">Nawa Sons Dairy</a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#topNavMenu" aria-controls="topNavMenu" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="topNavMenu">
+        <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+          {% if user.is_authenticated %}
+            {% if perms.core.view_dashboard %}
+              <li class="nav-item"><a class="nav-link" href="/"><i class="bi bi-speedometer2 me-2"></i>Dashboard</a></li>
+            {% endif %}
+            {% if perms.customers.add_customer %}
+              <li class="nav-item dropdown">
+                <a class="nav-link dropdown-toggle" href="#" id="navCustomers" role="button" data-bs-toggle="dropdown" aria-expanded="false"><i class="bi bi-people me-2"></i>Customers</a>
+                <ul class="dropdown-menu dropdown-menu-dark shadow" aria-labelledby="navCustomers">
+                  <li><a class="dropdown-item" href="{% url 'customers:index' %}"><i class="bi bi-card-list me-2"></i>View customers</a></li>
+                  <li><a class="dropdown-item" href="{% url 'customers:create' %}"><i class="bi bi-person-plus me-2"></i>Add customer</a></li>
                 </ul>
-              </div>
-            </li>
-          {% endif %}
-          <!-- Inventory -->
-          {% if perms.inventory.view_inventoryitem %}
-            <li class="nav-item">
-              <a class="nav-link" href="#" data-bs-toggle="collapse" data-bs-target="#inventoryCollapse">📦 Inventory <i class="bi bi-chevron-down float-end"></i></a>
-              <div class="collapse" id="inventoryCollapse">
-                <ul class="nav flex-column ms-3">
-                  <li class="nav-item"><a class="nav-link" href="{% url 'inventory:dashboard' %}">Inventory items</a></li>
-                  <li class="nav-item"><a class="nav-link" href="{% url 'inventory:dashboard' %}">Inventory transactions</a></li>
+              </li>
+            {% endif %}
+            {% if perms.inventory.view_inventoryitem %}
+              <li class="nav-item dropdown">
+                <a class="nav-link dropdown-toggle" href="#" id="navInventory" role="button" data-bs-toggle="dropdown" aria-expanded="false"><i class="bi bi-box-seam me-2"></i>Inventory</a>
+                <ul class="dropdown-menu dropdown-menu-dark shadow" aria-labelledby="navInventory">
+                  <li><a class="dropdown-item" href="{% url 'inventory:dashboard' %}"><i class="bi bi-archive me-2"></i>Inventory items</a></li>
+                  {% if perms.inventory.add_inventoryitem %}
+                    <li><a class="dropdown-item" href="{% url 'inventory:item_create' %}"><i class="bi bi-plus-circle me-2"></i>Add inventory item</a></li>
+                  {% endif %}
                 </ul>
-              </div>
-            </li>
-          {% endif %}
-          <!-- Lab -->
-          {% if perms.lab.view_rawmilktest %}
-            <li class="nav-item">
-              <a class="nav-link" href="#" data-bs-toggle="collapse" data-bs-target="#labCollapse">🔬 Lab <i class="bi bi-chevron-down float-end"></i></a>
-              <div class="collapse" id="labCollapse">
-                <ul class="nav flex-column ms-3">
-                  <li class="nav-item"><a class="nav-link" href="{% url 'lab:dashboard' %}">Lab batch approvals</a></li>
-                  <li class="nav-item"><a class="nav-link" href="{% url 'lab:dashboard' %}">Raw milk tests</a></li>
-                  <li class="nav-item"><a class="nav-link" href="{% url 'lab:dashboard' %}">Tank batch tests</a></li>
+              </li>
+            {% endif %}
+            {% if perms.sales.view_salestransaction or perms.sales.add_salestransaction %}
+              <li class="nav-item dropdown">
+                <a class="nav-link dropdown-toggle" href="#" id="navSales" role="button" data-bs-toggle="dropdown" aria-expanded="false"><i class="bi bi-cash-stack me-2"></i>Sales &amp; Finance</a>
+                <ul class="dropdown-menu dropdown-menu-dark shadow" aria-labelledby="navSales">
+                  {% if perms.sales.view_salestransaction %}
+                    <li><a class="dropdown-item" href="{% url 'sales:dashboard' %}"><i class="bi bi-graph-up me-2"></i>Sales dashboard</a></li>
+                  {% endif %}
+                  {% if perms.sales.add_salestransaction %}
+                    <li><a class="dropdown-item" href="{% url 'sales:create' %}"><i class="bi bi-plus-circle me-2"></i>Record sale</a></li>
+                  {% endif %}
                 </ul>
-              </div>
-            </li>
-          {% endif %}
-          <!-- Production -->
-          {% if perms.production.add_cow or perms.production.approve_milk or perms.production.view_productprice or perms.production.add_productionbatch %}
-            <li class="nav-item">
-              <a class="nav-link" href="#" data-bs-toggle="collapse" data-bs-target="#productionCollapse">🏭 Production <i class="bi bi-chevron-down float-end"></i></a>
-              <div class="collapse" id="productionCollapse">
-                <ul class="nav flex-column ms-3">
+              </li>
+            {% endif %}
+            {% if perms.lab.view_batchtest %}
+              <li class="nav-item dropdown">
+                <a class="nav-link dropdown-toggle" href="#" id="navLab" role="button" data-bs-toggle="dropdown" aria-expanded="false"><i class="bi bi-microscope me-2"></i>Lab</a>
+                <ul class="dropdown-menu dropdown-menu-dark shadow" aria-labelledby="navLab">
+                  <li><a class="dropdown-item" href="{% url 'lab:dashboard' %}"><i class="bi bi-speedometer me-2"></i>Lab dashboard</a></li>
+                  <li><a class="dropdown-item" href="{% url 'lab:batch_list' %}"><i class="bi bi-droplet me-2"></i>Intake batches</a></li>
+                  <li><a class="dropdown-item" href="{% url 'lab:batch_tests' %}"><i class="bi bi-clipboard-check me-2"></i>Batch tests board</a></li>
+                  <li><a class="dropdown-item" href="{% url 'lab:batch_approvals' %}"><i class="bi bi-check2-square me-2"></i>Batch approvals</a></li>
+                </ul>
+              </li>
+            {% endif %}
+            {% if perms.storage.view_coldstorageinventory %}
+              <li class="nav-item dropdown">
+                <a class="nav-link dropdown-toggle" href="#" id="navStorage" role="button" data-bs-toggle="dropdown" aria-expanded="false"><i class="bi bi-hdd-stack me-2"></i>Storage</a>
+                <ul class="dropdown-menu dropdown-menu-dark shadow" aria-labelledby="navStorage">
+                  <li><a class="dropdown-item" href="{% url 'storage:storage_list' %}"><i class="bi bi-thermometer-snow me-2"></i>Cold storage inventory</a></li>
+                  <li><a class="dropdown-item" href="{% url 'storage:storage_locations' %}"><i class="bi bi-diagram-3 me-2"></i>Storage areas</a></li>
+                </ul>
+              </li>
+            {% endif %}
+            {% if perms.production.add_cow or perms.production.approve_milk or perms.production.view_productprice or perms.production.add_productionbatch %}
+              <li class="nav-item dropdown">
+                <a class="nav-link dropdown-toggle" href="#" id="navProduction" role="button" data-bs-toggle="dropdown" aria-expanded="false"><i class="bi bi-gear-wide-connected me-2"></i>Production</a>
+                <ul class="dropdown-menu dropdown-menu-dark shadow" aria-labelledby="navProduction">
+                  <li><a class="dropdown-item" href="{% url 'production:cow_list' %}"><i class="bi bi-clipboard-data me-2"></i>Cow dashboard</a></li>
                   {% if perms.production.add_cow %}
-                    <li class="nav-item"><a class="nav-link" href="{% url 'production:cow_create' %}">Cows</a></li>
-                    <li class="nav-item"><a class="nav-link" href="{% url 'production:yield_create' %}">Milk yields</a></li>
+                    <li><a class="dropdown-item" href="{% url 'production:cow_create' %}"><i class="fas fa-cow me-2"></i>Cows</a></li>
+                    <li><a class="dropdown-item" href="{% url 'production:yield_create' %}"><i class="bi bi-droplet-half me-2"></i>Milk yields</a></li>
                   {% endif %}
                   {% if perms.production.add_productionbatch %}
-                    <li class="nav-item"><a class="nav-link" href="{% url 'production:batch_form' %}">Create Batch</a></li>
+                    <li><a class="dropdown-item" href="{% url 'production:batch_form' %}"><i class="bi bi-bezier me-2"></i>Create batch</a></li>
                   {% endif %}
                   {% if perms.production.view_productprice %}
-                    <li class="nav-item"><a class="nav-link" href="{% url 'production:price_list' %}">Product price change logs</a></li>
-                    <li class="nav-item"><a class="nav-link" href="{% url 'production:price_list' %}">Product prices</a></li>
+                    <li><a class="dropdown-item" href="{% url 'production:price_list' %}"><i class="bi bi-journal-text me-2"></i>Price change logs</a></li>
+                    <li><a class="dropdown-item" href="{% url 'production:price_list' %}"><i class="bi bi-currency-dollar me-2"></i>Product prices</a></li>
                   {% endif %}
                 </ul>
-              </div>
-            </li>
-          {% endif %}
-          <!-- Suppliers -->
-          {% if perms.suppliers.view_supplier %}
-            <li class="nav-item">
-              <a class="nav-link" href="#" data-bs-toggle="collapse" data-bs-target="#suppliersCollapse">🚚 Suppliers <i class="bi bi-chevron-down float-end"></i></a>
-              <div class="collapse" id="suppliersCollapse">
-                <ul class="nav flex-column ms-3">
-                  <li class="nav-item"><a class="nav-link" href="{% url 'suppliers:order_list' %}">Supplier orders</a></li>
-                  <li class="nav-item"><a class="nav-link" href="{% url 'suppliers:order_list' %}">Suppliers</a></li>
-                </ul>
-              </div>
-            </li>
-          {% endif %}
-          <!-- Reports -->
-          {% if perms.reports.view_report %}
-            <li class="nav-item">
-              <a class="nav-link" href="{% url 'reports:index' %}"><i class="bi bi-bar-chart"></i> Reports</a>
-            </li>
-          {% endif %}
-          <!-- Settings (placeholder) -->
-          <li class="nav-item">
-            <a class="nav-link" href="#"><i class="bi bi-gear"></i> Settings</a>
-          </li>
-          <!-- Auth -->
-          <li class="nav-item">
-            <a class="nav-link" href="{% url 'logout' %}"><i class="bi bi-box-arrow-right"></i> Logout</a>
-          </li>
-        {% else %}
-          <li class="nav-item">
-            <a class="nav-link" href="{% url 'login' %}"><i class="bi bi-box-arrow-in-right"></i> Login</a>
-          </li>
-        {% endif %}
-        <li class="nav-item">
-          <a class="nav-link" href="/docs/chapter1/"><i class="bi bi-book"></i> Documentation</a>
-        </li>
-      </ul>
-    </nav>
-
-    <!-- Offcanvas for mobile -->
-    <div class="offcanvas offcanvas-start d-md-none" tabindex="-1" id="mobileSidebar" aria-labelledby="mobileSidebarLabel">
-      <div class="offcanvas-header border-bottom">
-        <h5 class="offcanvas-title brand-font" id="mobileSidebarLabel">Nawa Sons Dairy</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
-      </div>
-      <div class="offcanvas-body p-0">
-        <ul class="nav flex-column p-2">
-          <!-- Same nav items as above, but for mobile -->
-          {% if user.is_authenticated %}
-            <li class="nav-item">
-              <a class="nav-link" href="/"><i class="bi bi-house-door"></i> Dashboard</a>
-            </li>
-            <!-- Customers -->
-            {% if perms.customers.add_customer %}
-              <li class="nav-item">
-                <a class="nav-link" href="#" data-bs-toggle="collapse" data-bs-target="#mobileCustomersCollapse">👥 Customers <i class="bi bi-chevron-down float-end"></i></a>
-                <div class="collapse" id="mobileCustomersCollapse">
-                  <ul class="nav flex-column ms-3">
-                    <li class="nav-item"><a class="nav-link" href="{% url 'customers:index' %}">View Customers</a></li>
-                    <li class="nav-item"><a class="nav-link" href="{% url 'customers:create' %}">Add Customer</a></li>
-                  </ul>
-                </div>
               </li>
             {% endif %}
-            <!-- Inventory -->
-            {% if perms.inventory.view_inventoryitem %}
-              <li class="nav-item">
-                <a class="nav-link" href="#" data-bs-toggle="collapse" data-bs-target="#mobileInventoryCollapse">📦 Inventory <i class="bi bi-chevron-down float-end"></i></a>
-                <div class="collapse" id="mobileInventoryCollapse">
-                  <ul class="nav flex-column ms-3">
-                    <li class="nav-item"><a class="nav-link" href="{% url 'inventory:dashboard' %}">Inventory items</a></li>
-                    <li class="nav-item"><a class="nav-link" href="{% url 'inventory:dashboard' %}">Inventory transactions</a></li>
-                  </ul>
-                </div>
-              </li>
-            {% endif %}
-            <!-- Lab -->
-            {% if perms.lab.view_rawmilktest %}
-              <li class="nav-item">
-                <a class="nav-link" href="#" data-bs-toggle="collapse" data-bs-target="#mobileLabCollapse">🔬 Lab <i class="bi bi-chevron-down float-end"></i></a>
-                <div class="collapse" id="mobileLabCollapse">
-                  <ul class="nav flex-column ms-3">
-                    <li class="nav-item"><a class="nav-link" href="{% url 'lab:dashboard' %}">Lab batch approvals</a></li>
-                    <li class="nav-item"><a class="nav-link" href="{% url 'lab:dashboard' %}">Raw milk tests</a></li>
-                    <li class="nav-item"><a class="nav-link" href="{% url 'lab:dashboard' %}">Tank batch tests</a></li>
-                  </ul>
-                </div>
-              </li>
-            {% endif %}
-            <!-- Production -->
-            {% if perms.production.add_cow or perms.production.approve_milk or perms.production.view_productprice or perms.production.add_productionbatch %}
-              <li class="nav-item">
-                <a class="nav-link" href="#" data-bs-toggle="collapse" data-bs-target="#mobileProductionCollapse">🏭 Production <i class="bi bi-chevron-down float-end"></i></a>
-                <div class="collapse" id="mobileProductionCollapse">
-                  <ul class="nav flex-column ms-3">
-                    {% if perms.production.add_cow %}
-                      <li class="nav-item"><a class="nav-link" href="{% url 'production:cow_create' %}">Cows</a></li>
-                      <li class="nav-item"><a class="nav-link" href="{% url 'production:yield_create' %}">Milk yields</a></li>
-                    {% endif %}
-                    {% if perms.production.add_productionbatch %}
-                      <li class="nav-item"><a class="nav-link" href="{% url 'production:batch_form' %}">Create Batch</a></li>
-                    {% endif %}
-                    {% if perms.production.view_productprice %}
-                      <li class="nav-item"><a class="nav-link" href="{% url 'production:price_list' %}">Product price change logs</a></li>
-                      <li class="nav-item"><a class="nav-link" href="{% url 'production:price_list' %}">Product prices</a></li>
-                    {% endif %}
-                  </ul>
-                </div>
-              </li>
-            {% endif %}
-            <!-- Suppliers -->
             {% if perms.suppliers.view_supplier %}
-              <li class="nav-item">
-                <a class="nav-link" href="#" data-bs-toggle="collapse" data-bs-target="#mobileSuppliersCollapse">🚚 Suppliers <i class="bi bi-chevron-down float-end"></i></a>
-                <div class="collapse" id="mobileSuppliersCollapse">
-                  <ul class="nav flex-column ms-3">
-                    <li class="nav-item"><a class="nav-link" href="{% url 'suppliers:order_list' %}">Supplier orders</a></li>
-                    <li class="nav-item"><a class="nav-link" href="{% url 'suppliers:order_list' %}">Suppliers</a></li>
-                  </ul>
-                </div>
+              <li class="nav-item dropdown">
+                <a class="nav-link dropdown-toggle" href="#" id="navSuppliers" role="button" data-bs-toggle="dropdown" aria-expanded="false"><i class="bi bi-truck me-2"></i>Suppliers</a>
+                <ul class="dropdown-menu dropdown-menu-dark shadow" aria-labelledby="navSuppliers">
+                  <li><a class="dropdown-item" href="{% url 'suppliers:order_list' %}"><i class="bi bi-card-checklist me-2"></i>Supplier orders</a></li>
+                  <li><a class="dropdown-item" href="{% url 'suppliers:manage' %}"><i class="bi bi-people-fill me-2"></i>Suppliers</a></li>
+                </ul>
               </li>
             {% endif %}
-            <!-- Reports -->
-            {% if perms.reports.view_report %}
-              <li class="nav-item">
-                <a class="nav-link" href="{% url 'reports:index' %}"><i class="bi bi-bar-chart"></i> Reports</a>
-              </li>
+            {% if perms.reports.view_report or perms.reports.view_reports_dashboard %}
+              <li class="nav-item"><a class="nav-link" href="{% url 'reports:index' %}"><i class="bi bi-bar-chart me-2"></i>Reports</a></li>
             {% endif %}
-            <!-- Settings -->
-            <li class="nav-item">
-              <a class="nav-link" href="#"><i class="bi bi-gear"></i> Settings</a>
-            </li>
-            <!-- Auth -->
-            <li class="nav-item">
-              <a class="nav-link" href="{% url 'logout' %}"><i class="bi bi-box-arrow-right"></i> Logout</a>
-            </li>
+            <li class="nav-item"><a class="nav-link" href="{% url 'core:profile_settings' %}"><i class="bi bi-gear me-2"></i>Settings</a></li>
+            {% if perms.auth.view_user %}
+              <li class="nav-item"><a class="nav-link" href="{% url 'core:user_management' %}"><i class="bi bi-people me-2"></i>User management</a></li>
+            {% endif %}
           {% else %}
-            <li class="nav-item">
-              <a class="nav-link" href="{% url 'login' %}"><i class="bi bi-box-arrow-in-right"></i> Login</a>
-            </li>
+            <li class="nav-item"><a class="nav-link" href="{% url 'login' %}"><i class="bi bi-box-arrow-in-right me-2"></i>Login</a></li>
           {% endif %}
-          <li class="nav-item">
-            <a class="nav-link" href="/docs/chapter1/"><i class="bi bi-book"></i> Documentation</a>
-          </li>
+          <li class="nav-item"><a class="nav-link" href="/docs/chapter1/"><i class="bi bi-journal-richtext me-2"></i>Docs</a></li>
         </ul>
+        <div class="navbar-actions d-flex flex-column flex-lg-row align-items-lg-center w-100 w-lg-auto">
+          {% if user.is_authenticated %}
+            {% with display_name=request.user.get_full_name|default:request.user.username %}
+              <div class="user-chip d-flex align-items-center gap-2 text-white">
+                {% if request.user.profile.avatar %}
+                  <img src="{{ request.user.profile.avatar.url }}" alt="Profile photo" class="user-avatar rounded-circle">
+                {% else %}
+                  <span class="user-avatar placeholder rounded-circle">{{ display_name|slice:":1"|upper }}</span>
+                {% endif %}
+                <div class="d-flex flex-column lh-1 user-meta">
+                  <span class="fw-semibold small">{{ display_name }}</span>
+                  {% if request.user.profile.job_title %}
+                    <small class="text-white-50">{{ request.user.profile.job_title }}</small>
+                  {% endif %}
+                </div>
+              </div>
+            {% endwith %}
+            <form method="post" action="{% url 'logout' %}" class="logout-form">
+              {% csrf_token %}
+              <button type="submit" class="btn btn-outline-warning btn-sm fw-semibold text-uppercase logout-btn">
+                <i class="bi bi-box-arrow-right me-2"></i>Logout
+              </button>
+            </form>
+          {% endif %}
+        </div>
       </div>
     </div>
-
-    <!-- Main content -->
-    <div class="flex-grow-1 d-flex flex-column" style="margin-left: 0; min-height: 100vh;">
-      <!-- Top bar for mobile -->
-      <nav class="navbar navbar-light bg-light d-md-none border-bottom">
-        <div class="container-fluid">
-          <button class="btn btn-outline-secondary" type="button" data-bs-toggle="offcanvas" data-bs-target="#mobileSidebar" aria-controls="mobileSidebar">
-            <i class="bi bi-list"></i>
-          </button>
-          <span class="navbar-brand mb-0 h1 brand-font">Nawa Sons Dairy</span>
-        </div>
-      </nav>
-
-      <main class="flex-grow-1 p-4">
-        {% block content %}{% endblock %}
-      </main>
-
-      <footer class="text-center py-3 border-top bg-light">
-        <p>&copy; Nawa Sons Dairy</p>
-      </footer>
-    </div>
+  </nav>
+  {% endif %}
+  <div class="app-shell d-flex flex-column min-vh-100">
+    <main class="flex-grow-1 p-4">
+      {% block content %}{% endblock %}
+    </main>
+    <footer class="text-center py-3 border-top bg-light">
+      <p>{% block footer_text %}&copy; Nawa Sons Dairy{% endblock %}</p>
+    </footer>
   </div>
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <!-- Bootstrap JS Bundle (includes Popper.js) -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+  {% block extra_js %}{% endblock %}
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+      document.querySelectorAll('table').forEach(function (table) {
+        applyColumnFilters(table);
+      });
+      setupExportTriggers();
+    });
 
-  <script src="{% static 'js/bootstrap.bundle.min.js' %}"></script>
+    function applyColumnFilters(table) {
+      if (table.dataset.filterApplied === 'true' || table.rows.length === 0) {
+        return;
+      }
+      ensureTableHead(table);
+      if (!table.tHead || table.tBodies.length === 0) {
+        return;
+      }
+      const columnCells = buildColumnCells(table.tHead);
+      if (!columnCells.length) {
+        return;
+      }
+      const filterRow = table.tHead.insertRow(-1);
+      filterRow.classList.add('column-filter-row');
+      const cellUsage = new Map();
+      columnCells.forEach(function (cell, index) {
+        const filterCell = document.createElement('th');
+        if (cell.dataset && cell.dataset.noFilter === 'true') {
+          filterCell.innerHTML = '<span class="disabled-filter">&mdash;</span>';
+          filterRow.appendChild(filterCell);
+          return;
+        }
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.className = 'form-control form-control-sm column-filter-input';
+        input.placeholder = 'Filter';
+        input.dataset.columnIndex = index.toString();
+        const keyList = (cell.dataset.filterKeys || cell.dataset.filterKey || '')
+          .split(',')
+          .map(function (key) { return key.trim(); })
+          .filter(Boolean);
+        if (keyList.length) {
+          const usedCount = cellUsage.get(cell) || 0;
+          cellUsage.set(cell, usedCount + 1);
+          const keyIndex = Math.min(usedCount, keyList.length - 1);
+          input.dataset.filterKey = keyList[keyIndex];
+        }
+        input.addEventListener('input', function () {
+          applyFilters(table);
+        });
+        filterCell.appendChild(input);
+        filterRow.appendChild(filterCell);
+      });
+      table.dataset.filterApplied = 'true';
+      hydrateFiltersFromQuery(table);
+    }
+
+    function setupExportTriggers() {
+      document.querySelectorAll('[data-export-trigger]').forEach(function (button) {
+        button.addEventListener('click', function (event) {
+          const table = document.querySelector(button.dataset.tableTarget || 'table');
+          if (!table) {
+            return;
+          }
+          event.preventDefault();
+          const url = new URL(window.location.href);
+          const exportType = button.dataset.exportType || 'pdf';
+          url.searchParams.set('export', exportType);
+          collectFilterParams(table).forEach(function (value, key) {
+            url.searchParams.set(key, value);
+          });
+          window.location.href = url.toString();
+        });
+      });
+    }
+
+    function collectFilterParams(table) {
+      const params = new Map();
+      table.querySelectorAll('.column-filter-row input').forEach(function (input) {
+        const key = input.dataset.filterKey;
+        const value = input.value.trim();
+        if (key && value) {
+          params.set('filter__' + key, value);
+        }
+      });
+      return params;
+    }
+
+    function hydrateFiltersFromQuery(table) {
+      const params = new URLSearchParams(window.location.search);
+      let applied = false;
+      table.querySelectorAll('.column-filter-row input').forEach(function (input) {
+        const key = input.dataset.filterKey;
+        if (!key) {
+          return;
+        }
+        const value = params.get('filter__' + key);
+        if (value) {
+          input.value = value;
+          applied = true;
+        }
+      });
+      if (applied) {
+        applyFilters(table);
+      }
+    }
+
+    function ensureTableHead(table) {
+      if (table.tHead) {
+        return;
+      }
+      const firstBody = table.tBodies[0];
+      if (!firstBody || !firstBody.rows.length) {
+        return;
+      }
+      const firstRow = firstBody.rows[0];
+      const thead = table.createTHead();
+      const headerRow = thead.insertRow(0);
+      Array.from(firstRow.cells).forEach(function (cell) {
+        const th = document.createElement('th');
+        th.textContent = cell.textContent;
+        th.colSpan = cell.colSpan;
+        th.rowSpan = cell.rowSpan;
+        headerRow.appendChild(th);
+      });
+    }
+
+    function buildColumnCells(thead) {
+      const rows = Array.from(thead.rows).filter(function (row) {
+        return !row.classList.contains('column-filter-row');
+      });
+      if (!rows.length) {
+        return [];
+      }
+      const matrix = [];
+      rows.forEach(function (row, rowIndex) {
+        if (!matrix[rowIndex]) {
+          matrix[rowIndex] = [];
+        }
+        let colPosition = 0;
+        Array.from(row.cells).forEach(function (cell) {
+          const rowSpan = cell.rowSpan || 1;
+          const colSpan = cell.colSpan || 1;
+          while (matrix[rowIndex][colPosition]) {
+            colPosition += 1;
+          }
+          for (let r = 0; r < rowSpan; r += 1) {
+            const targetRow = rowIndex + r;
+            if (!matrix[targetRow]) {
+              matrix[targetRow] = [];
+            }
+            for (let c = 0; c < colSpan; c += 1) {
+              matrix[targetRow][colPosition + c] = cell;
+            }
+          }
+          colPosition += colSpan;
+        });
+      });
+      return matrix[matrix.length - 1] || [];
+    }
+
+    function applyFilters(table) {
+      const inputs = table.querySelectorAll('.column-filter-row input');
+      const rows = table.tBodies[0] ? Array.from(table.tBodies[0].rows) : [];
+      rows.forEach(function (row) {
+        if (row.classList.contains('no-filter-row')) {
+          return;
+        }
+        let visible = true;
+        inputs.forEach(function (input) {
+          if (!visible) {
+            return;
+          }
+          const value = input.value.trim().toLowerCase();
+          if (!value) {
+            return;
+          }
+          const columnIndex = parseInt(input.dataset.columnIndex, 10);
+          const text = getCellText(row, columnIndex).toLowerCase();
+          if (!text.includes(value)) {
+            visible = false;
+          }
+        });
+        row.style.display = visible ? '' : 'none';
+      });
+    }
+
+    function getCellText(row, targetIndex) {
+      let currentIndex = 0;
+      for (let i = 0; i < row.cells.length; i += 1) {
+        const cell = row.cells[i];
+        const span = cell.colSpan || 1;
+        if (targetIndex >= currentIndex && targetIndex < currentIndex + span) {
+          return cell.textContent.trim();
+        }
+        currentIndex += span;
+      }
+      return '';
+    }
+  </script>
 </body>
+{% endwith %}
 </html>

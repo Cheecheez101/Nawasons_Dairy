@@ -1,69 +1,176 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="container mt-4">
-  <div class="row">
-    <div class="col-md-8 offset-md-2">
-      <h2 class="mb-3">Create Production Batch</h2>
+<div class="container py-4">
+  <div class="form-shell-wide">
+    <div class="card shadow-sm">
+      <div class="card-header bg-light">
+        <h2 class="h4 mb-0">Create Production Batch</h2>
+      </div>
+      <div class="card-body">
+        <form method="post" class="form-styled">
+          {% csrf_token %}
 
-      <!-- Batch form -->
-      <form method="post" class="form">
-        {% csrf_token %}
-        <div class="mb-3">
-          {{ form.as_p }}
-        </div>
-        <div id="max-units" class="alert alert-info mt-3" style="display:none;">
-          <strong>Maximum Units:</strong> <span id="units-calc">0</span>
-          <br><small>Units = (Litres available × 1000) / SKU size in ml</small>
-        </div>
-      <!-- Messages -->
-      {% if messages %}
-        <div class="mt-3">
-          <ul class="list-group">
-            {% for message in messages %}
-              <li class="list-group-item list-group-item-{{ message.tags }}">
-                {{ message }}
-              </li>
-            {% endfor %}
-          </ul>
-        </div>
-      {% endif %}
+          <div class="mb-3">
+            <label class="form-label">Processed By</label>
+            <input type="text" class="form-control" value="{{ request.user.get_full_name|default:request.user.username }}" disabled>
+            <div class="form-text">Automatically assigned to the current user.</div>
+          </div>
+
+          {% include "partials/form_fields.html" with form=form %}
+
+          <div id="max-units" class="alert alert-info" style="display:none;">
+            <strong>Maximum Units:</strong> <span id="units-calc">0</span><br>
+            <small>Units = (Litres available × 1000) / SKU size in ml</small>
+          </div>
+
+          <div class="d-flex justify-content-end gap-2 mt-4">
+            <button type="submit" class="btn btn-primary">Create Batch</button>
+          </div>
+        </form>
+
+        {% if messages %}
+          <div class="mt-4">
+            <ul class="list-group">
+              {% for message in messages %}
+                <li class="list-group-item list-group-item-{{ message.tags }}">{{ message }}</li>
+              {% endfor %}
+            </ul>
+          </div>
+        {% endif %}
+      </div>
     </div>
   </div>
 </div>
-{% endblock %}
 
-      <script>
-        function calculateUnits() {
-          const tankSelect = document.getElementById('id_source_tank');
-          const skuSelect = document.getElementById('id_sku');
-          const unitsDiv = document.getElementById('max-units');
-          const unitsSpan = document.getElementById('units-calc');
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    const skuData = JSON.parse('{{ sku_data_json|escapejs }}');
+    const productTypeSelect = document.getElementById('id_product_type');
+    const skuSelect = document.getElementById('id_sku');
+    const tankSelect = document.getElementById('id_source_tank');
+    const unitsDiv = document.getElementById('max-units');
+    const unitsSpan = document.getElementById('units-calc');
+    const quantityInput = document.getElementById('id_quantity_produced');
+    const litersInput = document.getElementById('id_liters_used');
+    let syncingFields = false;
 
-          if (tankSelect.selectedIndex > 0 && skuSelect.selectedIndex > 0) {
-            const tankText = tankSelect.options[tankSelect.selectedIndex].text;
-            const skuText = skuSelect.options[skuSelect.selectedIndex].text;
+    if (!productTypeSelect || !skuSelect) {
+      return;
+    }
 
-            // Parse litres from "Tank A: 150 litres"
-            const litresMatch = tankText.match(/(\d+(\.\d+)?)/);
-            const litres = litresMatch ? parseFloat(litresMatch[0]) : 0;
+    function getSkuSizeMl() {
+      if (!skuSelect || skuSelect.selectedIndex <= 0) {
+        return null;
+      }
+      const selected = skuSelect.options[skuSelect.selectedIndex];
+      const size = parseFloat(selected.dataset.size);
+      return Number.isFinite(size) && size > 0 ? size : null;
+    }
 
-            // Parse size from sku, e.g., "MAL A-CL-500" -> 500
-            const skuMatch = skuText.match(/-(\d+)/);
-            const size = skuMatch ? parseInt(skuMatch[1]) : 0;
+    function syncLitersFromQuantity() {
+      if (!quantityInput || !litersInput || syncingFields) {
+        return;
+      }
+      const size = getSkuSizeMl();
+      const quantity = parseFloat(quantityInput.value);
+      if (!size || !Number.isFinite(quantity) || quantity <= 0) {
+        return;
+      }
+      syncingFields = true;
+      litersInput.value = ((quantity * size) / 1000).toFixed(2);
+      syncingFields = false;
+    }
 
-            if (litres > 0 && size > 0) {
-              const units = Math.floor((litres * 1000) / size);
-              unitsSpan.textContent = units;
-              unitsDiv.style.display = 'block';
-            } else {
-              unitsDiv.style.display = 'none';
-            }
-          } else {
-            unitsDiv.style.display = 'none';
+    function syncQuantityFromLiters() {
+      if (!quantityInput || !litersInput || syncingFields) {
+        return;
+      }
+      const size = getSkuSizeMl();
+      const liters = parseFloat(litersInput.value);
+      if (!size || !Number.isFinite(liters) || liters <= 0) {
+        return;
+      }
+      syncingFields = true;
+      quantityInput.value = ((liters * 1000) / size).toFixed(2);
+      syncingFields = false;
+    }
+
+    function syncExistingValues() {
+      if (quantityInput && quantityInput.value) {
+        syncLitersFromQuantity();
+      } else if (litersInput && litersInput.value) {
+        syncQuantityFromLiters();
+      }
+    }
+
+    function updateSkuOptions() {
+      const selectedType = productTypeSelect.value;
+      const currentSku = skuSelect.value;
+      skuSelect.innerHTML = '<option value="">---------</option>';
+
+      if (selectedType && skuData[selectedType]) {
+        const items = skuData[selectedType];
+        items.forEach(item => {
+          const option = document.createElement('option');
+          option.value = item.sku;
+          option.text = item.name;
+          option.dataset.size = item.size;
+          if (item.sku === currentSku) {
+            option.selected = true;
           }
-        }
+          skuSelect.appendChild(option);
+        });
 
-        document.getElementById('id_source_tank').addEventListener('change', calculateUnits);
-        document.getElementById('id_sku').addEventListener('change', calculateUnits);
-      </script>
+        if (items.length > 0 && skuSelect.selectedIndex === 0) {
+          skuSelect.selectedIndex = 1;
+        }
+      }
+      syncExistingValues();
+      calculateUnits();
+    }
+
+    function calculateUnits() {
+      if (!unitsDiv || !unitsSpan || !tankSelect || tankSelect.selectedIndex <= 0 || skuSelect.selectedIndex <= 0) {
+        if (unitsDiv) {
+          unitsDiv.style.display = 'none';
+        }
+        return;
+      }
+
+      const tankText = tankSelect.options[tankSelect.selectedIndex].text;
+      const selectedSkuOption = skuSelect.options[skuSelect.selectedIndex];
+      const size = parseInt(selectedSkuOption.dataset.size, 10) || 0;
+      const litresMatch = tankText.match(/(\d+(\.\d+)?)/);
+      const litres = litresMatch ? parseFloat(litresMatch[0]) : 0;
+
+      if (litres > 0 && size > 0) {
+        const units = Math.floor((litres * 1000) / size);
+        unitsSpan.textContent = units;
+        unitsDiv.style.display = 'block';
+      } else {
+        unitsDiv.style.display = 'none';
+      }
+    }
+
+    productTypeSelect.addEventListener('change', updateSkuOptions);
+    skuSelect.addEventListener('change', () => {
+      syncExistingValues();
+      calculateUnits();
+    });
+    if (tankSelect) {
+      tankSelect.addEventListener('change', calculateUnits);
+    }
+    if (quantityInput) {
+      quantityInput.addEventListener('input', syncLitersFromQuantity);
+    }
+    if (litersInput) {
+      litersInput.addEventListener('input', syncQuantityFromLiters);
+    }
+
+    if (productTypeSelect.value) {
+      updateSkuOptions();
+    }
+  });
+</script>
+{% endblock %}

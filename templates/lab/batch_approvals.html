@@ -1,0 +1,317 @@
+{% extends "base.html" %}
+
+{% block title %}Lab approvals{% endblock %}
+
+{% block content %}
+<div class="container py-4" style="max-width: 1200px;">
+	<header class="mb-4">
+		<p class="text-uppercase text-muted mb-1" style="letter-spacing: 0.2rem;">Lab quality</p>
+		<div class="d-flex flex-wrap align-items-center gap-2">
+			<h1 class="mb-0">Batch approvals &amp; intake control</h1>
+			<a class="btn btn-outline-primary ms-auto" href="{% url 'lab:batch_list' %}">View intake batches</a>
+		</div>
+		<p class="text-muted mb-0">Test the leftover window batches, assign tanks, and keep an eye on every session window.</p>
+	</header>
+
+	<div class="row g-3 mb-4">
+		<div class="col-sm-6 col-lg-3">
+			<div class="card shadow-sm h-100">
+				<div class="card-body">
+					<p class="text-uppercase small text-muted mb-1">Total approvals</p>
+					<h3 class="mb-0">{{ totals.total }}</h3>
+				</div>
+			</div>
+		</div>
+		<div class="col-sm-6 col-lg-3">
+			<div class="card shadow-sm h-100">
+				<div class="card-body">
+					<p class="text-uppercase small text-muted mb-1">Approved</p>
+					<h3 class="text-success mb-0">{{ totals.approved }}</h3>
+				</div>
+			</div>
+		</div>
+		<div class="col-sm-6 col-lg-3">
+			<div class="card shadow-sm h-100">
+				<div class="card-body">
+					<p class="text-uppercase small text-muted mb-1">Pending</p>
+					<h3 class="text-warning mb-0">{{ totals.pending }}</h3>
+				</div>
+			</div>
+		</div>
+		<div class="col-sm-6 col-lg-3">
+			<div class="card shadow-sm h-100">
+				<div class="card-body">
+					<p class="text-uppercase small text-muted mb-1">With expiry</p>
+					<h3 class="text-primary mb-0">{{ totals.with_expiry }}</h3>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<section class="card shadow-sm mb-4">
+		<div class="card-header bg-white d-flex align-items-center gap-3">
+			<div>
+				<h2 class="h5 mb-0">Unassigned window batches</h2>
+				<small class="text-muted">Quickly run a lab test and move them into a storage tank.</small>
+			</div>
+			<span class="badge bg-secondary ms-auto">{{ unassigned_batches|length }} pending</span>
+		</div>
+		{% if unassigned_batches %}
+		<div class="table-responsive">
+			<table class="table align-middle mb-0">
+				<thead class="table-light">
+					<tr>
+						<th>Batch</th>
+						<th>Session</th>
+						<th>Status</th>
+						<th>Samples</th>
+						<th>Litres</th>
+						<th>Current tank</th>
+						<th></th>
+					</tr>
+				</thead>
+				<tbody>
+					{% for entry in unassigned_batches %}
+					{% with batch=entry.batch %}
+					<tr>
+						<td>#{{ batch.id }}<br><small class="text-muted">{{ batch.collection_date|date:"M d" }}</small></td>
+						<td>{{ batch.session|title }}</td>
+						<td>
+							{% if batch.state == 'open' %}
+								<span class="badge bg-warning text-dark">Open</span>
+							{% elif batch.state == 'closed' %}
+								<span class="badge bg-secondary">Closed</span>
+							{% else %}
+								<span class="badge bg-dark">Locked</span>
+							{% endif %}
+						</td>
+						<td>{{ entry.sample_count }}</td>
+						<td>{{ entry.total_litres|floatformat:2 }} L</td>
+						<td>{% if entry.current_tank %}{{ entry.current_tank }}{% else %}<span class="text-muted">Unassigned</span>{% endif %}</td>
+						<td class="text-end">
+							<button class="btn btn-sm btn-outline-primary" type="button" data-bs-toggle="collapse" data-bs-target="#quick-test-{{ batch.id }}" aria-expanded="false" aria-controls="quick-test-{{ batch.id }}">
+								Test &amp; assign
+							</button>
+						</td>
+					</tr>
+					<tr class="collapse bg-light" id="quick-test-{{ batch.id }}">
+						<td colspan="7" class="p-3">
+							<form method="post" class="row g-3">
+								{% csrf_token %}
+								<input type="hidden" name="action" value="quick_test">
+								<input type="hidden" name="batch_id" value="{{ batch.id }}">
+								<div class="col-md-4">
+									<label class="form-label fw-semibold">Storage tank</label>
+									<select name="storage_tank" class="form-select" required>
+										<option value="">Select tank</option>
+										{% for tank in assignable_tanks %}
+											<option value="{{ tank }}">{{ tank }}</option>
+										{% endfor %}
+									</select>
+									<small class="text-muted">Applies to every yield in this batch.</small>
+								</div>
+								<div class="col-md-2">
+									<label class="form-label fw-semibold">Fat %</label>
+									<input type="number" step="0.01" name="fat_percentage" class="form-control" required>
+								</div>
+								<div class="col-md-2">
+									<label class="form-label fw-semibold">SNF %</label>
+									<input type="number" step="0.01" name="snf_percentage" class="form-control" required>
+								</div>
+								<div class="col-md-2">
+									<label class="form-label fw-semibold">Acidity</label>
+									<input type="number" step="0.01" name="acidity" class="form-control" required>
+								</div>
+								<div class="col-md-2">
+									<label class="form-label fw-semibold">Result</label>
+									<select name="result" class="form-select" required>
+										{% for value, label in test_result_choices %}
+											<option value="{{ value }}">{{ label }}</option>
+										{% endfor %}
+									</select>
+								</div>
+								<div class="col-12">
+									<label class="form-label fw-semibold">Contaminants / notes</label>
+									<textarea name="contaminants" class="form-control" rows="2" placeholder="Optional observations..."></textarea>
+								</div>
+								<div class="col-12 d-flex flex-wrap gap-2">
+									<button type="submit" class="btn btn-primary">Save test</button>
+									<a class="btn btn-outline-secondary" href="{% url 'lab:batch_test_run' batch.id %}">Open full batch form</a>
+								</div>
+							</form>
+						</td>
+					</tr>
+					{% endwith %}
+					{% endfor %}
+				</tbody>
+			</table>
+		</div>
+		{% else %}
+		<div class="card-body text-muted">All collection windows are already assigned to tanks. Great job.</div>
+		{% endif %}
+	</section>
+
+	<section class="card shadow-sm mb-4">
+		<div class="card-header bg-white">
+			<h2 class="h5 mb-0">All session windows</h2>
+		</div>
+		<div class="table-responsive">
+			<table class="table table-striped align-middle mb-0">
+				<thead class="table-light">
+					<tr>
+						<th>Session</th>
+						<th>State</th>
+						<th>Batch ID</th>
+						<th>Litres</th>
+						<th>Opened at</th>
+						<th>Closed at</th>
+						<th class="text-end">Actions</th>
+					</tr>
+				</thead>
+				<tbody>
+					{% for window in session_windows %}
+					<tr>
+						<td>
+							{{ window.get_session_display }}
+							<div class="text-muted small">{{ window.collection_date|date:"M d, Y" }}</div>
+						</td>
+						<td>
+							{% if window.is_locked %}
+								<span class="badge bg-dark">Locked</span>
+							{% elif window.is_open %}
+								<span class="badge bg-success">Open</span>
+							{% else %}
+								<span class="badge bg-secondary">Closed</span>
+							{% endif %}
+						</td>
+						<td>#{{ window.id }}</td>
+						<td>{{ window.total_litres|default:0|floatformat:2 }} L</td>
+						<td>{% if window.opened_at %}{{ window.opened_at|date:"M d, H:i" }}{% else %}<span class="text-muted">—</span>{% endif %}</td>
+						<td>{% if window.closed_at %}{{ window.closed_at|date:"M d, H:i" }}{% else %}<span class="text-muted">—</span>{% endif %}</td>
+						<td class="text-end">
+							<div class="d-inline-flex gap-2">
+								<a href="{% url 'lab:batch_edit' window.id %}?next={{ request.get_full_path|urlencode }}"
+								   class="btn btn-sm btn-outline-secondary">Edit batch</a>
+								<a href="{% url 'lab:batch_test_run' window.id %}"
+								   class="btn btn-sm btn-outline-primary {% if window.state != 'closed' %}disabled{% endif %}"
+								   {% if window.state != 'closed' %}aria-disabled="true"{% endif %}>Run test</a>
+								{% if window.test_id %}
+									<a href="{% url 'lab:batch_test_run' window.id %}"
+									   class="btn btn-sm btn-outline-secondary">Edit test</a>
+									<a href="{% url 'lab:batch_test_detail' window.test.id %}"
+									   class="btn btn-sm btn-link">Details</a>
+								{% endif %}
+							</div>
+						</td>
+					</tr>
+					{% empty %}
+					<tr>
+						<td colspan="7" class="text-center text-muted py-4">No session windows recorded yet.</td>
+					</tr>
+					{% endfor %}
+				</tbody>
+			</table>
+		</div>
+	</section>
+
+	<section class="card shadow-sm">
+		<div class="card-body border-bottom">
+			<div class="d-flex flex-wrap align-items-center gap-3">
+				<div>
+					<h2 class="h5 mb-0">Approval history</h2>
+					<small class="text-muted">Filter by tank, result, or expiry issuance.</small>
+				</div>
+				<a class="btn btn-outline-secondary ms-auto" href="{% url 'lab:batch_approvals' %}">Reset filters</a>
+			</div>
+			<form method="get" class="row g-3 mt-3">
+				<div class="col-md-4">
+					<label class="form-label">Result</label>
+					<select name="result" class="form-select">
+						<option value="">All</option>
+						{% for value, label in result_choices %}
+							<option value="{{ value }}" {% if filters.result == value %}selected{% endif %}>{{ label }}</option>
+						{% endfor %}
+					</select>
+				</div>
+				<div class="col-md-4">
+					<label class="form-label">Source tank</label>
+					<select name="tank" class="form-select">
+						<option value="">All</option>
+						{% for tank in tank_options %}
+							<option value="{{ tank }}" {% if filters.tank == tank %}selected{% endif %}>{{ tank }}</option>
+						{% endfor %}
+					</select>
+				</div>
+				<div class="col-md-4">
+					<label class="form-label">Expiry state</label>
+					<select name="expiry_state" class="form-select">
+						<option value="">All</option>
+						<option value="issued" {% if filters.expiry_state == 'issued' %}selected{% endif %}>Expiry issued</option>
+						<option value="pending" {% if filters.expiry_state == 'pending' %}selected{% endif %}>Expiry pending</option>
+					</select>
+				</div>
+				<div class="col-12">
+					<button type="submit" class="btn btn-primary">Apply filters</button>
+				</div>
+			</form>
+		</div>
+		<div class="table-responsive">
+			<table class="table align-middle mb-0">
+				<thead class="table-light">
+					<tr>
+						<th>Production batch</th>
+						<th>Source tank</th>
+						<th>Result</th>
+						<th>Expiry date</th>
+						<th>Approved at</th>
+						<th>Approved by</th>
+						<th></th>
+					</tr>
+				</thead>
+				<tbody>
+					{% for approval in approvals %}
+					<tr>
+						<td>
+							{% if approval.production_batch %}
+								PB{{ approval.production_batch.id }}<br>
+								<small class="text-muted">{{ approval.production_batch.get_product_type_display }}</small>
+							{% else %}
+								<span class="text-muted">—</span>
+							{% endif %}
+						</td>
+						<td>{{ approval.production_batch.source_tank|default:"—" }}</td>
+						<td>
+							{% if approval.overall_result == 'approved' %}
+								<span class="badge bg-success">Approved</span>
+							{% elif approval.overall_result == 'rejected' %}
+								<span class="badge bg-danger">Rejected</span>
+							{% else %}
+								<span class="badge bg-warning text-dark">Pending</span>
+							{% endif %}
+						</td>
+						<td>
+							{% if approval.expiry_date %}
+								{{ approval.expiry_date|date:"M d, Y" }}
+							{% else %}
+								<span class="text-muted">Not issued</span>
+							{% endif %}
+						</td>
+						<td>{{ approval.approved_at|date:"M d, Y H:i" }}</td>
+						<td>{{ approval.approved_by.get_full_name|default:approval.approved_by|default:"—" }}</td>
+						<td class="text-end">
+							{% if approval.production_batch_id %}
+								<a class="btn btn-sm btn-outline-primary" href="{% url 'lab:approve_batch' approval.production_batch_id %}">Open</a>
+							{% endif %}
+						</td>
+					</tr>
+					{% empty %}
+					<tr>
+						<td colspan="7" class="text-center text-muted py-4">No approvals match the selected filters.</td>
+					</tr>
+					{% endfor %}
+				</tbody>
+			</table>
+		</div>
+	</section>
+</div>
+{% endblock %}

@@ -1,51 +1,382 @@
-{% extends 'base.html' %}
-{% block content %}
-<h1>Chapter One: Introduction</h1>
-<pre style="white-space: pre-wrap;">The Nawa Sons Dairy Farm Milk Production Information System is envisioned as a transformative solution to modernize the farm’s operations by introducing a centralized digital platform. Traditionally, the farm has relied on manual processes to manage milk collection, storage, sales, and customer interactions. While these methods have sustained operations for years, they are increasingly inadequate in today’s competitive agricultural environment. This documentation is organized into chapters that include the Literature Review, System Methodology, Analysis, Design, and Implementation. Each chapter builds upon the previous one, guiding the reader through the complete development lifecycle of the project—from identifying operational challenges to designing, testing, and deploying the system. This introductory chapter lays the groundwork by presenting the background of the farm, articulating the problem statement, defining the objectives, explaining the significance of the project, and outlining its scope and limitations. The project is particularly relevant to farm managers, employees, and stakeholders who require accurate records, efficient workflows, and improved customer service to remain competitive in the dairy industry.
+{% extends "base.html" %}
+{% load static %}
 
-1.1 Background Information
-
-Nawa Sons Dairy Farm is a family-owned enterprise that has been serving its community with fresh milk for several years. The farm operates in a sector where quality, timeliness, and efficiency are critical to customer satisfaction. Despite its success, the farm continues to rely on manual methods for managing production and sales. Currently, milk quantities are recorded in notebooks, and sales transactions are processed with handwritten receipts. Payments are primarily cash-based, and daily reconciliations are conducted manually. This approach is time-consuming and prone to human error. For example, discrepancies often arise between recorded sales and actual cash collected, leading to challenges in financial accountability. Inventory management is equally problematic. Staff members manually estimate stock levels, which can result in either shortages or wastage. Supplier communication is conducted through phone calls, often based on rough projections rather than accurate data. This lack of precision affects the farm’s ability to plan effectively and meet customer demand. Customer engagement is limited to face-to-face interactions, with no structured system for tracking preferences, loyalty, or purchase history. Promotional offers are communicated verbally or through posters, making it difficult to evaluate their impact. Industry trends show that many dairy farms are adopting computerized systems to improve production monitoring, inventory control, and sales management. These systems provide real-time data, reduce errors, and enhance decision-making. To remain competitive, Nawa Sons Dairy Farm must embrace technology that integrates its operations into a centralized, automated system. The proposed Milk Production Information System will digitize production records, automate inventory management, streamline sales, and introduce customer relationship management. This transformation will enhance accuracy, reduce delays, and provide management with real-time insights for better decision-making.
-
-1.2 Statement of the Problem
-
-Nawa Sons Dairy Farm faces several operational challenges that hinder efficiency and growth. Manual record-keeping often leads to errors in production and sales data. For instance, milk quantities recorded in notebooks may not match actual stock levels, resulting in either shortages or wastage. Inventory checks are inconsistent, and the absence of automated alerts means that staff often fail to reorder supplies on time. This leads to interruptions in service delivery and dissatisfied customers. Financial records are prone to inaccuracies due to manual calculations, making it difficult to track revenue and expenses accurately. The lack of a centralized system also prevents the farm from generating timely reports or analyzing customer behavior. Without insights into buying patterns, the farm cannot design effective marketing strategies or loyalty programs. These inefficiencies reduce profitability, compromise customer satisfaction, and limit the farm’s ability to compete in the dairy industry. The proposed information system aims to resolve these issues by automating production tracking, inventory monitoring, and sales processing. It will also provide analytical tools to support decision-making and improve customer service.
-
-1.3 Objectives
-
-1.3.1 General Objective
-
-To design and implement a computerized information system for Nawa Sons Dairy Farm that enhances efficiency, improves accuracy, and supports informed management decisions.
-
-1.3.2 Specific Objectives
-
-1. To digitize milk production records and enable real-time monitoring of collection and storage.
-2. To automate sales transactions with integrated payment options and electronic receipt generation.
-3. To provide detailed reporting tools for production, inventory, sales, and financial analysis.
-4. To establish a customer management module for tracking preferences and analyzing buying trends.
-5. To improve communication with suppliers by integrating order management into the system.
-6. To reduce operational delays by streamlining workflows and minimizing manual interventions.
-
-1.4 Significance and Relevance of the Project
-
-This project is significant because it introduces a modern solution to streamline the farm’s operations. By replacing manual processes with automated systems, it reduces errors, saves time, and improves service delivery. The ability to generate accurate reports and access real-time data empowers management to make strategic decisions. For example, managers can forecast demand more accurately, plan production schedules, and optimize inventory levels. The system also enhances financial accountability by providing precise records of sales and expenses. The project aligns with industry trends where technology is increasingly used to boost productivity and competitiveness. Stakeholders—including farm owners, employees, and customers—will benefit from smoother operations, better customer experiences, and improved profitability. Employees will spend less time on repetitive tasks, customers will enjoy faster service, and management will have access to reliable data for decision-making.
-
-1.5 Scope
-
-The Milk Production Information System will cover the following areas:
-• Milk Production Tracking: Recording quantities collected daily, monitoring storage levels, and ensuring quality control.
-• Inventory Management: Automated stock monitoring, reorder alerts, and supplier record maintenance.
-• Sales Processing: Transaction logging, integrated payment options, and electronic receipt generation.
-• Reporting: Generating detailed production, inventory, sales, and financial reports for analysis.
-• Customer Management: Tools for analyzing preferences, purchase patterns, and loyalty tracking.
-• Supplier Communication: Integration of order management to streamline procurement processes.
-
-Future upgrades may include online ordering and delivery services to expand the farm’s reach beyond the local community. The system may also integrate mobile applications to allow customers to place orders remotely.
-
-1.6 Limitations
-
-The system’s implementation may face challenges such as the initial cost of hardware and software, the need for stable internet connectivity for cloud-based features, and the requirement for staff training. These constraints could slow adoption but can be mitigated through proper planning and resource allocation. Another limitation is the potential resistance to change among employees who are accustomed to manual processes. Training and change management strategies will be essential to ensure smooth adoption. Additionally, while the system will improve efficiency, it may not fully eliminate external challenges such as fluctuating milk supply due to seasonal factors. Despite these limitations, the long-term benefits—such as improved efficiency, accuracy, and competitiveness—make the system a valuable investment for Nawa Sons Dairy Farm.
-
-</pre>
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/docs.css' %}">
 {% endblock %}
 
+{% block content %}
+<div class="docs-surface py-4 py-lg-5">
+  <div class="doc-shell px-3 px-lg-0">
+    <section class="doc-hero mb-4">
+      <p class="text-uppercase text-muted fw-semibold small mb-2">Milk Production Information System</p>
+      <h1>Project Documentation</h1>
+      <p>
+        A curated narrative of how the Nawa Sons Dairy Farm platform evolves—from the motivating
+        challenges, through academic grounding, to the analytical rigor that shapes implementation.
+        Use the navigation to jump between chapters and deep dives.
+      </p>
+      <div class="d-flex flex-wrap gap-3 mt-3">
+        <span class="badge text-bg-dark">Chapters 1–3</span>
+        <span class="text-muted small">Updated {% now "F j, Y" %}</span>
+      </div>
+    </section>
+
+    <div class="row doc-grid g-4">
+      <div class="col-lg-3">
+        <aside class="doc-toc">
+          <h2 class="mb-3">Chapters</h2>
+          <a href="#chapter-1">Chapter 1 · Introduction</a>
+          <a href="#chapter-2">Chapter 2 · Literature Review</a>
+          <a href="#chapter-3">Chapter 3 · System Analysis</a>
+        </aside>
+      </div>
+      <div class="col-lg-9">
+        <section id="chapter-1" class="doc-section">
+          <header class="mb-3">
+            <p class="text-uppercase small fw-semibold text-muted mb-1">Chapter One</p>
+            <h2>Introduction</h2>
+            <p class="mb-0">
+              This chapter frames the Nawa Sons Dairy Farm Milk Production Information System by
+              describing the farm context, the challenges of manual processes, and the objectives,
+              scope, and limitations for the proposed solution.
+            </p>
+          </header>
+
+          <article id="chapter-1-0" class="doc-subsection">
+            <h3>1.0 Overview</h3>
+            <p>
+              Nawa Sons Dairy Farm seeks to modernize operations through a centralized digital platform
+              that unifies milk collection, storage, sales, and customer engagement. Manual notebooks
+              and handwritten receipts have sustained the farm for years, yet they fall short in today’s
+              data-driven agricultural landscape. The documentation adopts a sequential structure—
+              literature review, methodology, analysis, design, and implementation—to capture the full
+              lifecycle from problem discovery to deployment.
+            </p>
+            <p>
+              The introductory chapter provides the background, problem statement, objectives,
+              significance, scope, and limitations. These components speak directly to managers,
+              employees, and stakeholders who rely on accurate records, efficient workflows, and modern
+              customer service to remain competitive.
+            </p>
+          </article>
+
+          <article id="chapter-1-1" class="doc-subsection">
+            <h3>1.1 Background Information</h3>
+            <p>
+              Nawa Sons is a family-owned farm that prides itself on delivering fresh milk. Quality,
+              timeliness, and efficiency are non-negotiable, yet the team depends on manual production
+              and sales processes. Milk quantities are logged in notebooks, sales get handwritten
+              receipts, payments are cash-based, and reconciliations occur manually—creating gaps between
+              recorded sales and actual cash, and obscuring accountability.
+            </p>
+            <p>
+              Inventory checks rely on estimates, causing shortages or wastage, while supplier
+              coordination depends on phone calls and rough projections. Customer engagement lacks a
+              structured system for loyalty or purchase histories, and promotions are difficult to
+              evaluate. As industry peers adopt computerized solutions for production monitoring,
+              inventory control, and sales management, Nawa Sons must digitize to stay competitive. The
+              proposed system digitizes production data, automates inventory, streamlines sales, and
+              embeds customer relationship management to deliver accurate, real-time insight.
+            </p>
+          </article>
+
+          <article id="chapter-1-2" class="doc-subsection">
+            <h3>1.2 Statement of the Problem</h3>
+            <p>
+              Manual record-keeping introduces reconciliation errors between production, stock, and
+              revenue. Inventory checks lack consistency and miss restocking cues, disrupting service
+              delivery. Financial accuracy suffers from manual calculations, and management cannot
+              generate timely reports or analyze customer behaviour, limiting loyalty initiatives and
+              marketing strategies. These inefficiencies reduce profitability and compromise customer
+              satisfaction. The proposed information system automates production tracking, inventory
+              monitoring, sales processing, and embeds analytics for data-driven decisions.
+            </p>
+          </article>
+
+          <article id="chapter-1-3" class="doc-subsection">
+            <h3>1.3 Objectives</h3>
+            <div class="doc-callout mb-3">
+              <strong>General Objective:</strong> Design and implement a computerized information system
+              that improves efficiency, accuracy, and managerial insight across Nawa Sons Dairy Farm.
+            </div>
+            <h4 class="h6 text-muted fw-semibold">Specific Objectives</h4>
+            <ol>
+              <li>Digitize milk production records with real-time monitoring of collection and storage.</li>
+              <li>Automate sales transactions with integrated payment options and electronic receipts.</li>
+              <li>Deliver detailed reporting for production, inventory, sales, and financial analysis.</li>
+              <li>Provide customer management tools for tracking preferences and buying trends.</li>
+              <li>Improve supplier communication through integrated order management.</li>
+              <li>Reduce operational delays by streamlining workflows and minimizing manual interventions.</li>
+            </ol>
+          </article>
+
+          <article id="chapter-1-4" class="doc-subsection">
+            <h3>1.4 Significance and Relevance</h3>
+            <p>
+              Automating previously manual processes reduces errors, saves time, and enhances the
+              customer experience. Accurate reporting and real-time data empower managers to forecast
+              demand, plan production, optimize inventory, and strengthen financial accountability. The
+              project mirrors broader agricultural technology trends, offering tangible benefits to
+              owners, employees, and customers alike.
+            </p>
+          </article>
+
+          <article id="chapter-1-5" class="doc-subsection">
+            <h3>1.5 Scope</h3>
+            <ul>
+              <li><strong>Milk Production Tracking:</strong> Daily yield recording, storage monitoring, and quality control.</li>
+              <li><strong>Inventory Management:</strong> Automated stock monitoring, reorder alerts, and supplier records.</li>
+              <li><strong>Sales Processing:</strong> Transaction logging, payment integration, and digital receipts.</li>
+              <li><strong>Reporting:</strong> Production, inventory, sales, and financial dashboards for analysis.</li>
+              <li><strong>Customer Management:</strong> Preference tracking, purchase histories, and loyalty metrics.</li>
+              <li><strong>Supplier Communication:</strong> Embedded order management to streamline procurement.</li>
+            </ul>
+            <p class="mb-0">
+              Future enhancements may introduce online ordering, delivery fulfillment, and mobile
+              applications for remote engagement.
+            </p>
+          </article>
+
+          <article id="chapter-1-6" class="doc-subsection">
+            <h3>1.6 Limitations</h3>
+            <p>
+              Key challenges include upfront hardware/software costs, the need for reliable internet for
+              cloud-enabled features, and staff training commitments. Change management is critical to
+              overcome resistance from teams accustomed to manual workflows. External factors—seasonal
+              milk supply fluctuations, for example—remain outside the system’s control, but the long-term
+              gains in efficiency and competitiveness outweigh these constraints.
+            </p>
+          </article>
+        </section>
+
+        <section id="chapter-2" class="doc-section">
+          <header class="mb-3">
+            <p class="text-uppercase small fw-semibold text-muted mb-1">Chapter Two</p>
+            <h2>Literature Review</h2>
+            <p class="mb-0">
+              The literature survey establishes theoretical grounding, evaluates existing agricultural
+              information systems, inspects applicable software methodologies, and highlights the gaps
+              the Nawa Sons solution intends to close.
+            </p>
+          </header>
+
+          <article id="chapter-2-1" class="doc-subsection">
+            <h3>2.1 Introduction</h3>
+            <p>
+              The review synthesizes theories, platforms, and tools relevant to dairy production
+              management, drawing on sources such as O’Brien and Marakas (2019) to underscore the value
+              of aligning system design with contemporary technological trends.
+            </p>
+          </article>
+
+          <article id="chapter-2-2" class="doc-subsection">
+            <h3>2.2 Theoretical Framework</h3>
+            <ul>
+              <li><strong>Technology Acceptance Model (TAM):</strong> Guides usability and perceived usefulness so staff can adopt the platform with minimal friction.</li>
+              <li><strong>Systems Theory:</strong> Treats the farm as an interconnected ecosystem, emphasizing seamless data flow between production, inventory, sales, and reporting.</li>
+              <li><strong>Information Systems Success Model:</strong> Prioritizes system, information, and service quality to drive user satisfaction and organizational impact.</li>
+            </ul>
+          </article>
+
+          <article id="chapter-2-3" class="doc-subsection">
+            <h3>2.3 Review of Existing Systems</h3>
+            <div class="doc-callout">
+              <strong>FarmLogs:</strong> Excels at crop tracking but lacks dairy-specific modules such as milk yield and herd health monitoring.
+            </div>
+            <div class="doc-callout">
+              <strong>Afimilk:</strong> Provides advanced analytics but demands significant infrastructure investment, pricing out smaller farms.
+            </div>
+            <div class="doc-callout">
+              <strong>iCow:</strong> Offers mobile guidance for livestock care but omits integrated inventory and sales management.
+            </div>
+            <p class="mb-0">
+              The Nawa Sons platform differentiates itself through an affordable, end-to-end feature set
+              tailored for small and medium dairy operations.
+            </p>
+          </article>
+
+          <article id="chapter-2-4" class="doc-subsection">
+            <h3>2.4 Review of Methodologies</h3>
+            <p>
+              The Waterfall model provides linear predictability but struggles with evolving requirements.
+              The Spiral model prioritizes risk mitigation but can be resource intensive. Agile stands out
+              for its iterative cadence, stakeholder feedback loops, and ability to incorporate emerging
+              priorities—making it the preferred choice for the dairy farm project.
+            </p>
+          </article>
+
+          <article id="chapter-2-5" class="doc-subsection">
+            <h3>2.5 Technological Trends and Tools</h3>
+            <ul>
+              <li><strong>Languages & Frameworks:</strong> Python, Django, and JavaScript deliver flexible backend/frontend capabilities.</li>
+              <li><strong>Databases:</strong> PostgreSQL and MySQL remain reliable for structured agricultural datasets.</li>
+              <li><strong>Security:</strong> SSL/TLS encryption and hashing algorithms (e.g., SHA-256) protect sensitive records.</li>
+              <li><strong>Emerging Trends:</strong> Cloud hosting and mobile responsiveness boost accessibility and scalability.</li>
+            </ul>
+          </article>
+
+          <article id="chapter-2-6" class="doc-subsection">
+            <h3>2.6 Gaps in the Literature</h3>
+            <ul>
+              <li>Limited customization for small farms with unique workflows.</li>
+              <li>Dependence on continuous internet connectivity, challenging in rural contexts.</li>
+              <li>Weak reporting and analytics in existing platforms.</li>
+              <li>High licensing and infrastructure costs.</li>
+            </ul>
+            <p class="mb-0">
+              The proposed system addresses these by providing customizable modules, offline-friendly
+              workflows, robust reporting, and cost-conscious deployment.
+            </p>
+          </article>
+
+          <article id="chapter-2-7" class="doc-subsection">
+            <h3>2.7 Critical Analysis and Synthesis</h3>
+            <p>
+              Literature emphasizes agile, user-centered systems (Pressman &amp; Maxim, 2020; Sommerville,
+              2020). Existing farm platforms improve record keeping but fall short in automation,
+              affordability, and usability. The synthesis informs a secure, adaptable design rooted in the
+              theories presented earlier.
+            </p>
+          </article>
+
+          <article id="chapter-2-8" class="doc-subsection">
+            <h3>2.8 Conclusion and References</h3>
+            <p>
+              By applying TAM, Systems Theory, and the IS Success Model—implemented through Agile
+              practices and modern web tooling—the Nawa Sons system aims to deliver an efficient,
+              user-friendly platform that bridges the gaps identified in existing literature.
+            </p>
+            <h4 class="h6 text-muted fw-semibold mt-4">References (APA 7th Edition)</h4>
+            <ol class="mb-0">
+              <li>Bertalanffy, L. V. (1968). <em>General system theory: Foundations, development, applications</em>. George Braziller.</li>
+              <li>Davis, F. D. (1989). Perceived usefulness, perceived ease of use, and user acceptance of information technology. <em>MIS Quarterly, 13</em>(3), 319–340.</li>
+              <li>DeLone, W. H., &amp; McLean, E. R. (2003). The DeLone and McLean model of information systems success: A ten-year update. <em>Journal of Management Information Systems, 19</em>(4), 9–30.</li>
+              <li>Elmasri, R., &amp; Navathe, S. B. (2017). <em>Fundamentals of database systems</em> (7th ed.). Pearson.</li>
+              <li>Highsmith, J. (2013). <em>Agile project management: Creating innovative products</em> (2nd ed.). Addison-Wesley.</li>
+              <li>Mutiso, P. (2021). Adoption of dairy management systems in Kenya. <em>African Journal of ICT, 15</em>(2), 34–47.</li>
+              <li>Ngugi, J., &amp; Kimani, S. (2021). Design of agricultural management systems for small farms. <em>ICT Research Journal, 9</em>(1), 23–36.</li>
+              <li>O’Brien, J. A., &amp; Marakas, G. M. (2019). <em>Introduction to information systems</em> (17th ed.). McGraw-Hill Education.</li>
+              <li>Ochieng, L., &amp; Wanjiku, M. (2022). Customization challenges in farm management systems. <em>Journal of Agricultural Informatics, 11</em>(3), 56–68.</li>
+              <li>Pressman, R. S., &amp; Maxim, B. R. (2020). <em>Software engineering: A practitioner’s approach</em> (9th ed.). McGraw-Hill Education.</li>
+              <li>Sommerville, I. (2020). <em>Software engineering</em> (10th ed.). Pearson.</li>
+              <li>Stallings, W. (2017). <em>Network security essentials: Applications and standards</em> (6th ed.). Pearson.</li>
+              <li>Wachira, K. (2021). Reporting limitations in agricultural systems. <em>International Journal of ICT in Agriculture, 7</em>(4), 88–102.</li>
+              <li>Mwangi, J. (2023). Mobile applications for livestock and dairy farm management in Kenya. <em>Journal of Agricultural Informatics, 12</em>(2), 45–59.</li>
+            </ol>
+          </article>
+        </section>
+
+        <section id="chapter-3" class="doc-section">
+          <header class="mb-3">
+            <p class="text-uppercase small fw-semibold text-muted mb-1">Chapter Three</p>
+            <h2>System Analysis</h2>
+            <p class="mb-0">
+              Chapter Three focuses on the Agile methodology applied, feasibility findings, data
+              collection instruments, and functional/non-functional requirements shaping the build.
+            </p>
+          </header>
+
+          <article id="chapter-3-1" class="doc-subsection">
+            <h3>3.1 Introduction</h3>
+            <p>
+              The analysis validates that the envisioned platform is practical, aligns with stakeholder
+              needs, and establishes a strong foundation before moving into design and implementation.
+            </p>
+          </article>
+
+          <article id="chapter-3-2" class="doc-subsection">
+            <h3>3.2 Systems Development Methodology</h3>
+            <p>
+              Agile SDLC underpins the build: iterative sprints (2–4 weeks), continuous feedback from farm
+              managers, flexibility for requirement shifts, and close collaboration between developers
+              and stakeholders. Phases include requirements analysis, design (DFDs/ERDs/UI mockups),
+              implementation, testing (unit, integration, UAT), deployment with training, and ongoing
+              maintenance.
+            </p>
+          </article>
+
+          <article id="chapter-3-3" class="doc-subsection">
+            <h3>3.3 Feasibility Study</h3>
+            <table class="doc-table">
+              <thead>
+                <tr>
+                  <th>Item</th>
+                  <th>Estimated Cost (KES)</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>Software Development</td>
+                  <td>250,000</td>
+                </tr>
+                <tr>
+                  <td>Hardware Upgrades</td>
+                  <td>120,000</td>
+                </tr>
+                <tr>
+                  <td>Staff Training</td>
+                  <td>60,000</td>
+                </tr>
+                <tr>
+                  <td>Maintenance</td>
+                  <td>40,000</td>
+                </tr>
+              </tbody>
+            </table>
+            <p>
+              The farm’s existing laptops and connectivity satisfy technical feasibility. Economically,
+              projected first-year efficiency gains of KES 140,000 yield:
+            </p>
+            <div class="doc-equation">ROI = (140,000 / 470,000) × 100 ≈ 30%</div>
+            <p>
+              Operational feasibility is ensured via intuitive interfaces and staff training; schedule
+              feasibility targets a six-month delivery (two months analysis/design, three months
+              development/testing, one month deployment). Legal compliance aligns with Kenya’s Data
+              Protection Act (2019), and the system reduces paper dependency, supporting environmental
+              feasibility.
+            </p>
+          </article>
+
+          <article id="chapter-3-4" class="doc-subsection">
+            <h3>3.4 Requirements Gathering</h3>
+            <p>
+              Interviews with managers, surveys across 30 employees, on-site observation, and ledger
+              reviews uncovered recurring errors in manual records, reconciliation delays, lack of
+              customer tracking, and supplier communication gaps. These insights directly informed
+              functional requirements for automation, alerts, analytics, and CRM capabilities.
+            </p>
+          </article>
+
+          <article id="chapter-3-5" class="doc-subsection">
+            <h3>3.5 Data and System Analysis</h3>
+            <h4 class="h6 text-muted fw-semibold">Functional Requirements</h4>
+            <ul>
+              <li>Daily milk production tracking with yield histories.</li>
+              <li>Inventory management plus automated reorder alerts.</li>
+              <li>Sales processing with integrated payments and receipt generation.</li>
+              <li>Customer preference tracking and loyalty analytics.</li>
+              <li>Comprehensive reporting across production, inventory, sales, and finance.</li>
+            </ul>
+            <h4 class="h6 text-muted fw-semibold">Non-Functional Requirements</h4>
+            <ul>
+              <li>Usability: simple, intuitive interfaces.</li>
+              <li>Reliability: accurate data storage and retrieval.</li>
+              <li>Security: role-based access and encryption of sensitive data.</li>
+              <li>Scalability: capacity for future modules like online ordering.</li>
+              <li>Performance: responsive data entry and reporting.</li>
+            </ul>
+            <h4 class="h6 text-muted fw-semibold">System Specifications</h4>
+            <ul class="mb-0">
+              <li>Hardware: standard laptops/desktops with internet access.</li>
+              <li>Software Stack: Python, Django, PostgreSQL, JavaScript, HTML/CSS.</li>
+              <li>Database: centralized relational store with backup strategy.</li>
+              <li>Primary Users: managers, sales staff, inventory clerks, and administrators.</li>
+            </ul>
+          </article>
+        </section>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

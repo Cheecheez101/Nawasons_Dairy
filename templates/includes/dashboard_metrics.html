@@ -1,0 +1,56 @@
+<div class="metrics-grid">
+    <div class="metric-card">
+        <div class="metric-icon primary">
+            <i class="fas fa-tint"></i>
+        </div>
+        <div class="metric-content">
+            <p class="metric-label">Milk Collected Today</p>
+            <h3>{{ milk_collected_today|floatformat:0 }} L</h3>
+            <span class="metric-trend text-success">↑ 4% from last week</span>
+        </div>
+    </div>
+
+    <div class="metric-card">
+        <div class="metric-icon amber">
+            <i class="fas fa-cow"></i>
+        </div>
+        <div class="metric-content">
+            <p class="metric-label">Active Herd</p>
+            <h3>{{ active_herd_count }} Cattle</h3>
+            <span class="metric-trend text-success">↑ 3% from last check</span>
+        </div>
+    </div>
+
+    <div class="metric-card">
+        <div class="metric-icon pink">
+            <i class="fas fa-user-plus"></i>
+        </div>
+        <div class="metric-content">
+            <p class="metric-label">Customers Added Today</p>
+            <h3>{{ customers_today }}</h3>
+            <span class="metric-trend text-success">↑ 12% from yesterday</span>
+        </div>
+    </div>
+
+    <div class="metric-card">
+        <div class="metric-icon green">
+            <i class="fas fa-warehouse"></i>
+        </div>
+        <div class="metric-content">
+            <p class="metric-label">Chilling Capacity</p>
+            <h3>{{ chilling_capacity_pct|floatformat:1 }}%</h3>
+            <span class="metric-trend text-danger">↓ 2% vs target</span>
+        </div>
+    </div>
+
+    <div class="metric-card">
+        <div class="metric-icon blue">
+            <i class="fas fa-chart-line"></i>
+        </div>
+        <div class="metric-content">
+            <p class="metric-label">Projected Revenue</p>
+            <h3>KSh {{ projected_revenue|floatformat:1 }}</h3>
+            <span class="metric-trend text-success">↑ 8% month-over-month</span>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,137 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Batch Test{% endblock %}
+
+{% block content %}
+<div class="container" style="max-width: 960px;">
+  <h2>Batch test</h2>
+
+  {# Batch summary card #}
+  <section style="border: 1px solid #e5e7eb; border-radius: 8px; padding: 16px; margin-bottom: 20px;">
+    <h3 style="margin-top: 0;">Batch summary</h3>
+    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;">
+      <div><strong>ID:</strong> {{ batch.id }}</div>
+      <div><strong>Session:</strong> {{ batch.session|title }}</div>
+      <div><strong>Created:</strong> {{ batch.created_at }}</div>
+      <div><strong>Total yields:</strong> {{ batch.yields.count }}</div>
+      <div><strong>Total litres:</strong>
+        {{ total_litres|default:"—" }}
+      </div>
+      <div><strong>Status:</strong>
+        {% if batch.test %}
+          {{ batch.test.result|title }}
+        {% else %}
+          Pending
+        {% endif %}
+      </div>
+    </div>
+  </section>
+
+  {# Yields table #}
+  <section style="border: 1px solid #e5e7eb; border-radius: 8px; padding: 16px; margin-bottom: 20px;">
+    <h3 style="margin-top: 0;">Yields in this batch</h3>
+    <div style="overflow-x: auto;">
+      <table style="width: 100%; border-collapse: collapse;">
+        <thead>
+          <tr style="text-align: left; border-bottom: 1px solid #e5e7eb;">
+            <th style="padding: 8px;">Cow</th>
+            <th style="padding: 8px;">Recorded at</th>
+            <th style="padding: 8px;">Session</th>
+            <th style="padding: 8px;">Litres</th>
+            <th style="padding: 8px;">Tank</th>
+            <th style="padding: 8px;">Quality grade</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for y in batch.yields.all %}
+          <tr style="border-bottom: 1px solid #f3f4f6;">
+            <td style="padding: 8px;">{{ y.cow.cow_id }}</td>
+            <td style="padding: 8px;">{{ y.recorded_at }}</td>
+            <td style="padding: 8px;">{{ y.session|title }}</td>
+            <td style="padding: 8px;">{{ y.yield_litres }}</td>
+            <td style="padding: 8px;">{{ y.storage_tank }}</td>
+            <td style="padding: 8px;">{{ y.quality_grade|title }}</td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="6" style="padding: 8px; color: #6b7280;">No yields assigned to this batch yet.</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  {# Test form #}
+  <section style="border: 1px solid #e5e7eb; border-radius: 8px; padding: 16px;">
+    <h3 style="margin-top: 0;">Run batch test</h3>
+
+    {% if form.non_field_errors %}
+      <div style="background: #fef2f2; border: 1px solid #fecaca; color: #991b1b; padding: 10px; border-radius: 6px; margin-bottom: 12px;">
+        {{ form.non_field_errors }}
+      </div>
+    {% endif %}
+
+    <form method="post" novalidate>
+      {% csrf_token %}
+
+      <div style="margin-bottom: 16px;">
+        <label for="storage_tank" class="form-label"><strong>Assign storage tank</strong></label>
+        <select name="storage_tank" id="storage_tank" class="form-select">
+          <option value="">Keep current assignment ({{ current_tank }})</option>
+          {% for tank in tank_choices %}
+            <option value="{{ tank }}" {% if selected_tank == tank %}selected{% endif %}>{{ tank }}</option>
+          {% endfor %}
+        </select>
+        <small class="text-muted">All yields in this intake batch will be marked for the selected tank.</small>
+      </div>
+
+      <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px;">
+        <div>
+          <label for="{{ form.fat_percentage.id_for_label }}"><strong>Fat %:</strong></label>
+          {{ form.fat_percentage }}
+          {{ form.fat_percentage.errors }}
+        </div>
+        <div>
+          <label for="{{ form.snf_percentage.id_for_label }}"><strong>SNF %:</strong></label>
+          {{ form.snf_percentage }}
+          {{ form.snf_percentage.errors }}
+        </div>
+        <div>
+          <label for="{{ form.acidity.id_for_label }}"><strong>Acidity:</strong></label>
+          {{ form.acidity }}
+          {{ form.acidity.errors }}
+        </div>
+        <div>
+          <label for="{{ form.result.id_for_label }}"><strong>Result:</strong></label>
+          {{ form.result }}
+          {{ form.result.errors }}
+        </div>
+      </div>
+
+      <div style="margin-top: 12px;">
+        <label for="{{ form.contaminants.id_for_label }}"><strong>Contaminants / notes:</strong></label>
+        {{ form.contaminants }}
+        {{ form.contaminants.errors }}
+      </div>
+
+      {% if form.tested_by %}
+      <div style="margin-top: 12px;">
+        <label for="{{ form.tested_by.id_for_label }}"><strong>Tested by:</strong></label>
+        {{ form.tested_by }}
+        {{ form.tested_by.errors }}
+      </div>
+      {% endif %}
+
+      <div style="margin-top: 20px; display: flex; gap: 8px;">
+        <button type="submit" class="btn btn-primary">Save test</button>
+        {% if batch.test %}
+          <a href="{% url 'lab:batch_test_detail' batch.test.id %}" class="btn btn-secondary">View existing test</a>
+        {% endif %}
+        <a href="{% url 'lab:batch_list' %}" class="btn">Back to batches</a>
+      </div>
+    </form>
+  </section>
+</div>
+{% endblock %}

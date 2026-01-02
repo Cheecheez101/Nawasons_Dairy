@@ -1,19 +1,153 @@
 {% extends 'base.html' %}
+{% block extra_css %}
+<style>
+  .ascii-receipt {
+    font-family: "Courier New", Courier, monospace;
+    background: #fff;
+    border: 1px solid #222;
+    border-radius: 0.75rem;
+    padding: 2rem;
+    max-width: 660px;
+    margin: 0 auto;
+    box-shadow: 0 0.75rem 2rem rgba(0, 0, 0, 0.08);
+  }
+  .receipt-logo {
+    text-align: center;
+    margin-bottom: 0.5rem;
+  }
+  .receipt-logo img {
+    width: 140px;
+    height: auto;
+  }
+  .ascii-receipt p { margin-bottom: 0.35rem; }
+  .ascii-divider {
+    border-top: 1px solid #111;
+    margin: 0.4rem 0;
+  }
+  .ascii-divider::after {
+    content: "";
+    display: block;
+    margin-top: -1px;
+    border-top: 1px solid #111;
+  }
+  .ascii-header {
+    text-align: center;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    font-weight: 700;
+  }
+  .ascii-tagline {
+    text-align: center;
+    font-size: 0.9rem;
+    letter-spacing: 0.2em;
+  }
+  .ascii-line {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.95rem;
+  }
+  .ascii-table-header,
+  .ascii-table-row {
+    display: grid;
+    grid-template-columns: 1fr 90px 120px 130px;
+    font-size: 0.95rem;
+  }
+  .ascii-table-header { font-weight: 700; }
+  .ascii-table-row span:nth-child(2),
+  .ascii-table-row span:nth-child(3),
+  .ascii-table-row span:nth-child(4),
+  .ascii-table-header span:nth-child(2),
+  .ascii-table-header span:nth-child(3),
+  .ascii-table-header span:nth-child(4) {
+    text-align: right;
+  }
+  .ascii-footnote {
+    text-align: center;
+    margin-top: 1rem;
+    font-weight: 600;
+  }
+  @media print {
+    body, .app-shell, .app-shell main { background: #fff !important; }
+    nav, .navbar, .navbar-actions, footer, .print-hidden { display: none !important; }
+    .app-shell main { padding: 0 !important; }
+    .ascii-receipt {
+      box-shadow: none;
+      border-radius: 0;
+      border: none;
+      max-width: none;
+    }
+  }
+</style>
+{% endblock %}
 {% block content %}
-<h1>Receipt #{{ transaction.transaction_id }}</h1>
-<p><strong>Customer:</strong> {{ transaction.customer_name }} ({{ transaction.customer_phone }})</p>
-<p><strong>Status:</strong> {{ transaction.get_payment_status_display }}</p>
-<p><strong>Date:</strong> {{ transaction.created_at|date:"Y-m-d H:i" }}</p>
-<table>
-  <tr><th>Item</th><th>Quantity</th><th>Unit Price</th><th>Total</th></tr>
-  {% for item in transaction.items.all %}
-  <tr>
-    <td>{{ item.inventory_item.name }}</td>
-    <td>{{ item.quantity }}</td>
-    <td>{{ item.price_per_unit }}</td>
-    <td>{{ item.line_total }}</td>
-  </tr>
-  {% endfor %}
-</table>
-<p><strong>Grand Total:</strong> {{ transaction.total_amount }}</p>
+<div class="container py-4">
+  <div class="row justify-content-center">
+    <div class="col-lg-8">
+      <div class="print-hidden d-flex justify-content-end mb-3">
+        <button class="btn btn-outline-primary" onclick="window.print()">
+          <i class="bi bi-printer me-2"></i>Print receipt
+        </button>
+      </div>
+      <div class="ascii-receipt">
+        <div class="receipt-logo">
+          <img src="{% static 'img/NAWASONS_LOGO.png' %}" alt="Nawa Sons Dairy Farm logo">
+        </div>
+        <div class="ascii-divider"></div>
+        <p class="ascii-header">Nawa Sons Dairy Farm</p>
+        <p class="ascii-tagline">Fresh Milk • Quality • Trust</p>
+        <div class="ascii-divider"></div>
+
+        <div class="ascii-line">
+          <span>Receipt No: {{ transaction.transaction_id }}</span>
+          <span>Date: {{ transaction.created_at|date:"d-M-Y" }}</span>
+        </div>
+        <p>Customer: {{ transaction.customer_display_name }}</p>
+
+        <p class="mt-3">Items:</p>
+        <div class="ascii-divider"></div>
+        <div class="ascii-table-header">
+          <span>Product</span>
+          <span>Qty</span>
+          <span>Unit Price</span>
+          <span>Total</span>
+        </div>
+        <div class="ascii-divider"></div>
+        {% for item in line_items %}
+        <div class="ascii-table-row">
+          <span>{{ item.inventory_item.name }}</span>
+          <span>{{ item.quantity }}{% if item.inventory_item.unit %}&nbsp;{{ item.inventory_item.unit }}{% endif %}</span>
+          <span>KSh {{ item.price_per_unit|floatformat:2 }}</span>
+          <span>KSh {{ item.line_total|floatformat:2 }}</span>
+        </div>
+        {% empty %}
+        <p class="text-muted">No line items recorded.</p>
+        {% endfor %}
+        <div class="ascii-divider"></div>
+
+        <div class="ascii-line">
+          <span>Subtotal:</span>
+          <span>KSh {{ subtotal|floatformat:2 }}</span>
+        </div>
+        <div class="ascii-line">
+          <span>Discount:</span>
+          <span>KSh {{ discount_amount|floatformat:2 }}</span>
+        </div>
+        <div class="ascii-line fw-bold">
+          <span>Grand Total:</span>
+          <span>KSh {{ grand_total|floatformat:2 }}</span>
+        </div>
+        <div class="ascii-divider"></div>
+
+        <p>Payment Method: {{ transaction.get_payment_mode_display }}</p>
+        <p>Transaction Ref: {{ transaction.payment_reference|default:'N/A' }}</p>
+        <div class="ascii-divider"></div>
+        <p>Served By: {{ served_by_name }} ({{ served_by_role }})</p>
+        <div class="ascii-divider"></div>
+        <p class="ascii-footnote mb-1">Thank you for your purchase!</p>
+        <p class="text-center">Nawa Sons Dairy — Freshness you can trust</p>
+        <div class="ascii-divider"></div>
+      </div>
+    </div>
+  </div>
+</div>
 {% endblock %}

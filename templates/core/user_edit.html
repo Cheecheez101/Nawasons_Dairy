@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+
+{% block title %}Edit User{% endblock %}
+
+{% block extra_css %}
+<style>
+    .edit-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+        gap: 1.5rem;
+    }
+
+    .edit-card {
+        background: #ffffff;
+        border-radius: 1.25rem;
+        padding: 1.5rem;
+        box-shadow: 0 16px 45px rgba(15, 23, 42, 0.09);
+        border: 1px solid rgba(148, 163, 184, 0.2);
+    }
+
+    .edit-card h5 {
+        font-weight: 600;
+        margin-bottom: 1rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-3">
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-4">
+        <div>
+            <p class="text-uppercase small text-muted mb-1">User Management</p>
+            <h1 class="fw-bold mb-0">Edit {{ managed_user.username }}</h1>
+            <p class="mb-0 text-muted">Joined {{ managed_user.date_joined|date:"M d, Y" }}</p>
+        </div>
+        <a href="{% url 'core:user_management' %}" class="btn btn-outline-secondary">
+            &larr; Back to User List
+        </a>
+    </div>
+
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    <div class="edit-grid">
+        <div class="edit-card">
+            <h5>Account Details</h5>
+            <form method="post" class="vstack gap-3">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="update_user">
+                {% for field in user_form %}
+                    <div>
+                        <label class="form-label">{{ field.label }}</label>
+                        {{ field }}
+                        {% if field.errors %}<div class="text-danger small">{{ field.errors|join:', ' }}</div>{% endif %}
+                    </div>
+                {% endfor %}
+                <button class="btn btn-primary">Save Changes</button>
+            </form>
+        </div>
+
+        <div class="edit-card">
+            <h5>Group Membership</h5>
+            <form method="post" class="vstack gap-3">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="update_groups">
+                {% for field in group_form %}
+                    <div>
+                        <label class="form-label">{{ field.label }}</label>
+                        {{ field }}
+                        {% if field.help_text %}<div class="form-text">{{ field.help_text }}</div>{% endif %}
+                        {% if field.errors %}<div class="text-danger small">{{ field.errors|join:', ' }}</div>{% endif %}
+                    </div>
+                {% endfor %}
+                <button class="btn btn-outline-primary">Update Groups</button>
+            </form>
+        </div>
+
+        <div class="edit-card">
+            <h5>Change Password</h5>
+            <form method="post" class="vstack gap-3">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="change_password">
+                {% for field in password_form %}
+                    <div>
+                        <label class="form-label">{{ field.label }}</label>
+                        {{ field }}
+                        {% if field.errors %}<div class="text-danger small">{{ field.errors|join:', ' }}</div>{% endif %}
+                    </div>
+                {% endfor %}
+                <button class="btn btn-outline-danger">Update Password</button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+{% block title %}Manage Storage Areas{% endblock %}
+
+{% block content %}
+<div class="container" style="max-width: 960px;">
+  <h2>Storage Areas</h2>
+
+  {% if messages %}
+    <ul class="messages">
+      {% for message in messages %}
+        <li class="{{ message.tags }}">{{ message }}</li>
+      {% endfor %}
+    </ul>
+  {% endif %}
+
+  <div style="overflow-x:auto;">
+    <table style="width:100%; border-collapse: collapse;">
+      <thead>
+        <tr style="border-bottom:2px solid #e5e7eb;">
+          <th style="padding:8px;">ID</th>
+          <th style="padding:8px;">Name</th>
+          <th style="padding:8px;">Type</th>
+          <th style="padding:8px;">Capacity</th>
+          <th style="padding:8px;">Description</th>
+          {% if perms.storage.change_storagelocation or perms.storage.delete_storagelocation %}
+          <th style="padding:8px;">Actions</th>
+          {% endif %}
+        </tr>
+      </thead>
+      <tbody>
+        {% for loc in locations %}
+        <tr style="border-bottom:1px solid #f3f4f6;">
+          <td style="padding:8px;">{{ loc.id }}</td>
+          <td style="padding:8px;">{{ loc.name }}</td>
+          <td style="padding:8px;">{{ loc.get_location_type_display }}</td>
+          <td style="padding:8px;">{{ loc.capacity }}</td>
+          <td style="padding:8px;">{{ loc.description|default:"—" }}</td>
+          {% if perms.storage.change_storagelocation or perms.storage.delete_storagelocation %}
+          <td style="padding:8px;">
+            {% if perms.storage.change_storagelocation %}
+              <a href="{% url 'storage:location_edit' loc.id %}" class="btn btn-sm btn-primary">Edit</a>
+            {% endif %}
+            {% if perms.storage.delete_storagelocation %}
+              <a href="{% url 'storage:location_delete' loc.id %}" class="btn btn-sm btn-danger"
+                 onclick="return confirm('Are you sure you want to delete this location?');">
+                Delete
+              </a>
+            {% endif %}
+          </td>
+          {% endif %}
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="6" style="padding:8px; text-align:center; color:#6b7280;">
+            No storage locations defined.
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  {% if perms.storage.add_storagelocation %}
+  <div style="margin-top:20px;">
+    <a href="{% url 'storage:location_add' %}" class="btn btn-success">Add New Storage Area</a>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

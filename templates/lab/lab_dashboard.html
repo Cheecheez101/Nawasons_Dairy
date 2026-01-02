@@ -1,375 +1,761 @@
 {% extends "base.html" %}
+{% block title %}Lab Traceability Console{% endblock %}
+
+{% block extra_css %}
+<style>
+    :root {
+        --ink: #041220;
+        --paper: #f5f6fb;
+        --accent: #0f6fff;
+        --pass: #16a34a;
+        --fail: #dc2626;
+        --pending: #f97316;
+        --line: rgba(4, 18, 32, 0.08);
+    }
+
+    body {
+        background: var(--paper);
+    }
+
+    .trace-shell {
+        max-width: 1500px;
+        margin: 0 auto;
+        padding: 2.5rem 1.5rem 4rem;
+        display: flex;
+        flex-direction: column;
+        gap: 1.75rem;
+        color: var(--ink);
+        font-family: "Space Grotesk", "Poppins", sans-serif;
+    }
+
+    .trace-hero {
+        background: #fff;
+        border-radius: 32px;
+        padding: 2.5rem;
+        border: 1px solid var(--line);
+        box-shadow: 0 25px 55px rgba(4, 18, 32, 0.08);
+        display: flex;
+        flex-wrap: wrap;
+        gap: 2rem;
+        align-items: flex-start;
+        justify-content: space-between;
+    }
+
+    .hero-copy h1 {
+        font-size: 2.15rem;
+        margin-bottom: 0.35rem;
+    }
+
+    .hero-copy p {
+        max-width: 520px;
+    }
+
+    .hero-metrics {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 1rem;
+        flex: 1;
+    }
+
+    .hero-metrics article {
+        border: 1px solid var(--line);
+        border-radius: 20px;
+        padding: 1rem 1.25rem;
+        background: var(--paper);
+    }
+
+    .hero-metrics h4 {
+        font-size: 0.75rem;
+        letter-spacing: 0.14rem;
+        text-transform: uppercase;
+        margin-bottom: 0.4rem;
+        color: #6b7280;
+    }
+
+    .hero-metrics strong {
+        font-size: 1.8rem;
+        display: block;
+    }
+
+    .trace-filter {
+        background: #fff;
+        border-radius: 28px;
+        padding: 1.5rem 2rem;
+        border: 1px solid var(--line);
+        box-shadow: 0 18px 40px rgba(4, 18, 32, 0.08);
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 1.1rem;
+        align-items: end;
+    }
+
+    .trace-filter label {
+        font-size: 0.78rem;
+        letter-spacing: 0.08rem;
+        text-transform: uppercase;
+        color: #64748b;
+        margin-bottom: 0.35rem;
+        display: block;
+    }
+
+    .trace-filter select,
+    .trace-filter input[type="date"] {
+        width: 100%;
+        border-radius: 14px;
+        border: 1px solid var(--line);
+        padding: 0.65rem 0.85rem;
+        font-size: 0.95rem;
+        background: var(--paper);
+    }
+
+    .filter-actions {
+        display: flex;
+        gap: 0.75rem;
+        flex-wrap: wrap;
+    }
+
+    .trace-btn {
+        border-radius: 999px;
+        padding: 0.65rem 1.45rem;
+        font-weight: 600;
+        border: 1px solid transparent;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        text-decoration: none;
+    }
+
+    .trace-btn.primary {
+        background: var(--accent);
+        color: #fff;
+    }
+
+    .trace-btn.ghost {
+        border: 1px solid var(--line);
+        color: var(--ink);
+        background: transparent;
+    }
+
+    .trace-panel {
+        background: #fff;
+        border-radius: 30px;
+        padding: 2rem;
+        border: 1px solid var(--line);
+        box-shadow: 0 25px 55px rgba(4, 18, 32, 0.07);
+        display: flex;
+        flex-direction: column;
+        gap: 1.25rem;
+    }
+
+    .session-grid {
+        background: #fff;
+        border: 1px solid var(--line);
+        border-radius: 30px;
+        padding: 2rem;
+        box-shadow: 0 25px 55px rgba(4, 18, 32, 0.07);
+        display: flex;
+        flex-direction: column;
+        gap: 1.5rem;
+    }
+
+    .session-cards {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 1.2rem;
+    }
+
+    .session-card {
+        border: 1px solid var(--line);
+        border-radius: 24px;
+        padding: 1.25rem 1.5rem;
+        display: flex;
+        flex-direction: column;
+        gap: 0.85rem;
+        background: var(--paper);
+    }
+
+    .session-card h3 {
+        margin: 0;
+        font-size: 1.1rem;
+    }
+
+    .session-card.state-locked {
+        background: #fff5f5;
+    }
+
+    .session-volume {
+        font-size: 2rem;
+        font-weight: 600;
+        margin: 0;
+    }
+
+    .session-note {
+        font-size: 0.85rem;
+        color: #64748b;
+    }
+
+    .session-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+    }
+
+    .batch-ledger {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+        gap: 1.25rem;
+    }
+
+    .ledger-column {
+        background: #fff;
+        border-radius: 28px;
+        border: 1px solid var(--line);
+        box-shadow: 0 18px 40px rgba(4, 18, 32, 0.08);
+        padding: 1.75rem;
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+    }
+
+    .ledger-column h3 {
+        margin: 0;
+        font-size: 1.2rem;
+    }
+
+    .ledger-note {
+        margin: 0;
+        color: #64748b;
+        font-size: 0.9rem;
+    }
+
+    .trace-table.mini th {
+        font-size: 0.65rem;
+    }
+
+    .trace-table.mini td {
+        font-size: 0.88rem;
+    }
+
+    .panel-head {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: space-between;
+        gap: 1rem;
+    }
+
+    .panel-head p {
+        margin: 0;
+        color: #6b7280;
+    }
+
+    .status-pill {
+        border-radius: 999px;
+        padding: 0.25rem 0.85rem;
+        font-weight: 600;
+        font-size: 0.85rem;
+        display: inline-flex;
+        gap: 0.45rem;
+        align-items: center;
+    }
+
+    .status-pill.pass { background: rgba(22, 163, 74, 0.18); color: var(--pass); }
+    .status-pill.fail { background: rgba(220, 38, 38, 0.18); color: var(--fail); }
+    .status-pill.pending { background: rgba(249, 115, 22, 0.18); color: var(--pending); }
+
+    .trace-table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+        table-layout: auto;
+    }
+
+    .trace-table th,
+    .trace-table td {
+        padding: 0.85rem 0.9rem;
+        white-space: normal;
+        text-overflow: initial;
+        overflow: visible;
+        vertical-align: middle;
+        font-variant-numeric: tabular-nums;
+        word-break: break-word;
+    }
+
+    .trace-table th {
+        text-align: left;
+        font-size: 0.72rem;
+        letter-spacing: 0.14rem;
+        text-transform: uppercase;
+        color: #6b7280;
+        border-bottom: 2px solid var(--line);
+        background: #f9fafc;
+    }
+
+    .trace-table td {
+        border-bottom: 1.5px solid var(--line);
+        font-size: 0.95rem;
+        line-height: 1.35;
+    }
+
+    .trace-table tr:last-child td {
+        border-bottom: none;
+    }
+
+    .table-scroll {
+        overflow: auto;
+        width: 100%;
+        padding: 0;
+        border: 2px solid var(--line);
+        border-radius: 20px;
+        background: #fff;
+        overflow: hidden;
+    }
+
+    .trace-table tbody tr:nth-child(even) {
+        background: rgba(4, 18, 32, 0.015);
+    }
+
+    .trace-table tbody tr:hover {
+        background: rgba(15, 111, 255, 0.08);
+    }
+
+    .audit-note {
+        display: block;
+        font-size: 0.78rem;
+        color: #94a3b8;
+        margin-top: 0.2rem;
+    }
+
+    .empty-state {
+        text-align: center;
+        color: #94a3b8;
+        padding: 1rem 0;
+    }
+
+    @media (max-width: 768px) {
+        .trace-hero,
+        .trace-filter,
+        .trace-panel {
+            padding: 1.5rem;
+        }
+
+        .trace-table th,
+        .trace-table td {
+            white-space: nowrap;
+        }
+    }
+</style>
+{% endblock %}
 
 {% block content %}
-<div class="container-fluid mt-4">
-  <div class="row">
-    <div class="col-12">
-      <h1 class="mb-4 text-center brand-heading">🧪 Lab Dashboard</h1>
-      <p class="text-muted text-center">Monitor and manage milk yields, lab tests, tank approvals, and production batches.</p>
-    </div>
-  </div>
+<div class="trace-shell">
+    <header class="trace-hero">
+        <div class="hero-copy">
+            <p class="text-uppercase text-muted" style="letter-spacing:0.18rem; font-size:0.78rem;">Traceability Stack</p>
+            <h1>Lab Traceability Console</h1>
+            <p>Every milk movement is validated in real time. Off-window collection attempts are rejected, batch approvals are enforced, and only expiry-cleared lots reach storage.</p>
+        </div>
+        <div class="hero-metrics">
+            <article>
+                <h4>Collections</h4>
+                <strong>{{ overview.collections|default:0 }}</strong>
+                <small class="text-muted">Recorded windows</small>
+            </article>
+            <article>
+                <h4>Lab Tests</h4>
+                <strong>{{ overview.lab_tests|default:0 }}</strong>
+                <small class="text-muted">Quality checks</small>
+            </article>
+            <article>
+                <h4>Approved Batches</h4>
+                <strong>{{ overview.approved_batches|default:0 }}</strong>
+                <small class="text-muted">Released for production</small>
+            </article>
+            <article>
+                <h4>Storage Lots</h4>
+                <strong>{{ overview.storage_batches|default:0 }}</strong>
+                <small class="text-muted">Expiry-tagged stock</small>
+            </article>
+        </div>
+    </header>
 
-  <!-- Quick Stats Cards -->
-  <div class="row mb-4">
-    <div class="col-md-3">
-      <div class="card text-white bg-primary">
-        <div class="card-body">
-          <h5 class="card-title">📊 Total Yields</h5>
-          <h2 class="card-text">{{ yields|length }}</h2>
-          <p class="card-text">Milk yields recorded</p>
-        </div>
-      </div>
-    </div>
-    <div class="col-md-3">
-      <div class="card text-white bg-warning">
-        <div class="card-body">
-          <h5 class="card-title">⏳ Pending Approvals</h5>
-          <h2 class="card-text">{{ pending_approvals|default:0 }}</h2>
-          <p class="card-text">Batches awaiting lab approval</p>
-        </div>
-      </div>
-    </div>
-    <div class="col-md-3">
-      <div class="card text-white bg-danger">
-        <div class="card-body">
-          <h5 class="card-title">⚠️ Near Expiry</h5>
-          <h2 class="card-text">{{ near_expiry|default:0 }}</h2>
-          <p class="card-text">Yields expiring soon</p>
-        </div>
-      </div>
-    </div>
-    <div class="col-md-3">
-      <div class="card text-white bg-success">
-        <div class="card-body">
-          <h5 class="card-title">🏭 Approved Tanks</h5>
-          <h2 class="card-text">{{ approved_tanks|length }}</h2>
-          <p class="card-text">Tanks ready for production</p>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Tanks Summary Section -->
-  <div class="row mb-4">
-    <div class="col-12">
-      <div class="card">
-        <div class="card-header bg-info text-white">
-          <h4 class="mb-0 section-header">🪣 Tanks Summary</h4>
-          <small>Overview of milk pooled in tanks and available actions</small>
-        </div>
-        <div class="card-body">
-          <div class="table-responsive">
-            <table class="table table-striped table-hover">
-              <thead class="table-dark">
-                <tr>
-                  <th>Tank</th>
-                  <th>Total Litres</th>
-                  <th>Number of Yields</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {% for t in tanks_summary %}
-                <tr>
-                  <td><strong>{{ t.storage_tank }}</strong></td>
-                  <td>{{ t.total_litres }} L</td>
-                  <td>{{ t.yields_count }}</td>
-                  <td>
-                    {% if perms.lab.add_tankbatchtest %}
-                      <a class="btn btn-outline-primary btn-sm me-2" href="{% url 'lab:create_tank_test' tank=t.storage_tank %}">
-                        ➕ Create Tank Test
-                      </a>
+        <section class="session-grid" aria-label="Intake batch control">
+            <div class="panel-head" style="gap:0.5rem;">
+                <div>
+                    <h2 style="margin-bottom:0.2rem;">Collection Windows</h2>
+                    <p>Manually open or close intake batches when operations need an override.</p>
+                </div>
+                <div class="d-flex flex-column flex-sm-row gap-2 align-items-sm-center">
+                    <p class="text-muted mb-0 small">Actions available to lab supervisors with override access.</p>
+                    {% if perms.lab.change_batch %}
+                        <a href="{% url 'lab:session_admin' %}" class="btn btn-outline-secondary btn-sm">Session settings</a>
                     {% endif %}
-                    {% if perms.lab.view_rawmilktest and t.total_litres > 0 %}
-                      <a class="btn btn-outline-success btn-sm me-2" href="{% url 'production:batch_form' %}?tank={{ t.storage_tank }}">
-                        🧾 Create Batch
-                      </a>
-                    {% endif %}
-                    <a class="btn btn-outline-info btn-sm" href="{% url 'lab:tank_yield_tests' tank=t.storage_tank %}">
-                      🔍 View Details
-                    </a>
-                  </td>
-                </tr>
-                {% empty %}
-                <tr>
-                  <td colspan="4" class="text-center text-muted">No tank data available.</td>
-                </tr>
+                </div>
+            </div>
+            <div class="session-cards">
+                {% for session in session_windows %}
+                    <article class="session-card state-{{ session.state }}">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <h3>{{ session.label }} Batch</h3>
+                            <span class="status-pill {% if session.is_locked %}fail{% elif session.is_open %}pass{% else %}pending{% endif %}">
+                                {{ session.state|title }}
+                            </span>
+                        </div>
+                        <p class="session-volume">{{ session.litres|floatformat:1 }} L</p>
+                        <p class="session-note mb-0">
+                            {% if session.batch_id %}
+                                Batch #{{ session.batch_id }} ·
+                                {% if session.is_locked %}
+                                    Locked after lab approval
+                                {% elif session.is_open %}
+                                    Opened {{ session.opened_at|date:"H:i"|default:"—" }}
+                                {% else %}
+                                    Closed {{ session.closed_at|date:"H:i"|default:"—" }}
+                                {% endif %}
+                            {% else %}
+                                Not yet opened for {{ session.collection_date|date:"M d" }}
+                            {% endif %}
+                        </p>
+                        {% if perms.lab.change_batch %}
+                            <form method="post" action="{% url 'lab:collection_session_toggle' %}" class="session-actions">
+                                {% csrf_token %}
+                                <input type="hidden" name="session" value="{{ session.key }}">
+                                <input type="hidden" name="collection_date" value="{{ session.collection_date }}">
+                                <input type="hidden" name="next" value="{% url 'lab:dashboard' %}">
+                                {% if session.is_locked %}
+                                    <button type="button" class="trace-btn ghost" disabled>Awaiting test result</button>
+                                {% elif session.is_open %}
+                                    <button type="submit" name="action" value="close" class="trace-btn ghost">Close Batch</button>
+                                {% else %}
+                                    <button type="submit" name="action" value="open" class="trace-btn primary">Reopen Batch</button>
+                                {% endif %}
+                            </form>
+                        {% else %}
+                            <p class="session-note">Visibility only — no override rights.</p>
+                        {% endif %}
+                    </article>
                 {% endfor %}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
+            </div>
+        </section>
 
-  <!-- Milk Yields Section -->
-  <div class="row mb-4">
-    <div class="col-12">
-      <div class="card">
-        <div class="card-header bg-secondary text-white d-flex justify-content-between align-items-center">
-          <h4 class="mb-0">🥛 Milk Yields</h4>
-          <button class="btn btn-outline-light btn-sm" type="button" data-bs-toggle="collapse" data-bs-target="#filterCollapse" aria-expanded="false" aria-controls="filterCollapse">
-            🔍 Filters
-          </button>
-        </div>
-        <div class="collapse" id="filterCollapse">
-          <div class="card-body">
-            <form method="get" class="row g-3">
-              <div class="col-md-3">
-                <label for="date_from" class="form-label">Date From</label>
-                <input type="date" class="form-control" id="date_from" name="date_from" value="{{ filters.date_from }}">
-              </div>
-              <div class="col-md-3">
-                <label for="date_to" class="form-label">Date To</label>
-                <input type="date" class="form-control" id="date_to" name="date_to" value="{{ filters.date_to }}">
-              </div>
-              <div class="col-md-3">
-                <label for="tank" class="form-label">Tank</label>
-                <select class="form-select" id="tank" name="tank">
-                  <option value="">All Tanks</option>
-                  {% for t in tanks %}
-                    <option value="{{ t }}" {% if filters.tank == t %}selected{% endif %}>{{ t }}</option>
-                  {% endfor %}
-                </select>
-              </div>
-              <div class="col-md-3">
-                <label for="status" class="form-label">Status</label>
-                <select class="form-select" id="status" name="status">
-                  <option value="">All Statuses</option>
-                  <option value="approved" {% if filters.status == 'approved' %}selected{% endif %}>Approved</option>
-                  <option value="pending" {% if filters.status == 'pending' %}selected{% endif %}>Pending</option>
-                  <option value="expired" {% if filters.status == 'expired' %}selected{% endif %}>Expired</option>
-                  <option value="near_expiry" {% if filters.status == 'near_expiry' %}selected{% endif %}>Near Expiry</option>
-                </select>
-              </div>
-              <div class="col-12">
-                <button type="submit" class="btn btn-primary">Apply Filters</button>
-                <a href="{% url 'lab:dashboard' %}" class="btn btn-secondary">Clear Filters</a>
-              </div>
-            </form>
-          </div>
-        </div>
-        <div class="card-body">
-          <div class="table-responsive">
-            <table class="table table-striped table-hover">
-              <thead class="table-dark">
-                <tr>
-                  <th>Cow</th>
-                  <th>Date Collected</th>
-                  <th>Litres</th>
-                  <th>Tank</th>
-                  <th>Status</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {% for yield in yields %}
-                <tr class="{% if yield.is_expired %}table-danger{% elif yield.is_near_expiry %}table-warning{% endif %}">
-                  <td>{{ yield.cow.name }} ({{ yield.cow.cow_id }})</td>
-                  <td>{{ yield.recorded_at|date:"M d, Y H:i" }}</td>
-                  <td>{{ yield.yield_litres }} L</td>
-                  <td>{{ yield.storage_tank }}</td>
-                  <td>
-                    {% if yield.is_expired %}
-                      <span class="badge bg-danger">Expired</span>
-                    {% elif yield.is_near_expiry %}
-                      <span class="badge bg-warning">Near Expiry</span>
-                    {% else %}
-                      <span class="badge bg-success">Valid</span>
-                    {% endif %}
-                  </td>
-                  <td>
-                    {% if perms.lab.view_rawmilktest %}
-                      <a class="btn btn-outline-info btn-sm me-1" href="{% url 'lab:milk_yield_tests' yield_id=yield.id %}">
-                        📊 Tests
-                      </a>
-                    {% endif %}
-                    {% if perms.lab.add_rawmilktest %}
-                      <a class="btn btn-outline-primary btn-sm me-1" href="{% url 'lab:add_raw_test' yield_id=yield.id %}">
-                        ➕ Raw Test
-                      </a>
-                    {% endif %}
-                    {% if perms.lab.add_tankbatchtest %}
-                      <a class="btn btn-outline-secondary btn-sm me-1" href="{% url 'lab:add_tank_test' yield_id=yield.id %}">
-                        🧪 Tank Test
-                      </a>
-                    {% endif %}
-                  </td>
-                </tr>
-                {% empty %}
-                <tr>
-                  <td colspan="6" class="text-center text-muted">No milk yields recorded yet.</td>
-                </tr>
-                {% endfor %}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
+        <section class="batch-ledger" aria-label="Batch status lists">
+            <article class="ledger-column">
+                <div class="panel-head">
+                    <div>
+                        <h3>Open batches</h3>
+                        <p class="ledger-note">Intake windows currently collecting milk.</p>
+                    </div>
+                    <span class="status-pill pass">Live</span>
+                </div>
+                <div class="table-scroll">
+                    <table class="trace-table mini">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Date</th>
+                                <th>Session</th>
+                                <th>Samples</th>
+                                <th>Litres</th>
+                                <th>Opened</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% if open_batches %}
+                                {% for batch in open_batches %}
+                                    <tr>
+                                        <td>#{{ batch.id }}</td>
+                                        <td>{{ batch.collection_date|date:"M d" }}</td>
+                                        <td>{{ batch.get_session_display }}</td>
+                                        <td>{{ batch.sample_count|default:0 }}</td>
+                                        <td>{{ batch.total_litres|default:0|floatformat:1 }} L</td>
+                                        <td>{{ batch.opened_at|date:"H:i"|default:"—" }}</td>
+                                    </tr>
+                                {% endfor %}
+                            {% else %}
+                                <tr>
+                                    <td colspan="6" class="empty-state">No open batches at the moment.</td>
+                                </tr>
+                            {% endif %}
+                        </tbody>
+                    </table>
+                </div>
+            </article>
 
-  <!-- Tank Tests Section -->
-  <div class="row mb-4">
-    <div class="col-12">
-      <div class="card">
-        <div class="card-header bg-warning text-dark">
-          <h4 class="mb-0">🧪 Tank Tests</h4>
-          <small>Review and approve/reject tank-level tests</small>
-        </div>
-        <div class="card-body">
-          <div class="table-responsive">
-            <table class="table table-striped table-hover">
-              <thead class="table-dark">
-                <tr>
-                  <th>Tank</th>
-                  <th>Cow</th>
-                  <th>Date</th>
-                  <th>Litres</th>
-                  <th>Test Result</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {% for test in tank_tests %}
-                {% with y=test.milk_yield %}
-                <tr>
-                  <td><strong>{{ y.storage_tank }}</strong></td>
-                  <td>{{ y.cow.name }} ({{ y.cow.cow_id }})</td>
-                  <td>{{ y.recorded_at|date:"M d, Y" }}</td>
-                  <td>{{ y.yield_litres }} L</td>
-                  <td>
-                    {% if test.result == "approved" %}
-                      <span class="badge bg-success">Approved</span>
-                    {% elif test.result == "rejected" %}
-                      <span class="badge bg-danger">Rejected</span>
-                    {% else %}
-                      <span class="badge bg-secondary">Pending</span>
-                    {% endif %}
-                  </td>
-                  <td>
-                    {% if perms.lab.change_tankbatchtest and test.result == "pending" %}
-                      <a class="btn btn-outline-success btn-sm me-1" href="{% url 'lab:approve_tank_test' test_id=test.id action='approve' %}">
-                        ✅ Approve
-                      </a>
-                      <a class="btn btn-outline-danger btn-sm me-1" href="{% url 'lab:approve_tank_test' test_id=test.id action='reject' %}">
-                        ❌ Reject
-                      </a>
-                    {% endif %}
-                    <a class="btn btn-outline-info btn-sm" href="{% url 'lab:tank_yield_tests' tank=y.storage_tank %}">
-                      🔍 View Tank
-                    </a>
-                  </td>
-                </tr>
-                {% endwith %}
-                {% empty %}
-                <tr>
-                  <td colspan="6" class="text-center text-muted">No tank tests available.</td>
-                </tr>
-                {% endfor %}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
+            <article class="ledger-column">
+                <div class="panel-head">
+                    <div>
+                        <h3>Closed batches</h3>
+                        <p class="ledger-note">Ready for consolidated lab testing.</p>
+                    </div>
+                    <span class="status-pill pending">Awaiting test</span>
+                </div>
+                <div class="table-scroll">
+                    <table class="trace-table mini">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Date</th>
+                                <th>Session</th>
+                                <th>Samples</th>
+                                <th>Litres</th>
+                                <th>Closed</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% if closed_batches %}
+                                {% for batch in closed_batches %}
+                                    <tr>
+                                        <td>#{{ batch.id }}</td>
+                                        <td>{{ batch.collection_date|date:"M d" }}</td>
+                                        <td>{{ batch.get_session_display }}</td>
+                                        <td>{{ batch.sample_count|default:0 }}</td>
+                                        <td>{{ batch.total_litres|default:0|floatformat:1 }} L</td>
+                                        <td>{{ batch.closed_at|date:"H:i"|default:"—" }}</td>
+                                    </tr>
+                                {% endfor %}
+                            {% else %}
+                                <tr>
+                                    <td colspan="6" class="empty-state">No closed batches awaiting tests.</td>
+                                </tr>
+                            {% endif %}
+                        </tbody>
+                    </table>
+                </div>
+            </article>
+        </section>
 
-  <!-- Approved Tanks for Production -->
-  <div class="row">
-    <div class="col-12">
-      <div class="card">
-        <div class="card-header bg-success text-white">
-          <h4 class="mb-0">🏭 Approved Tanks for Production</h4>
-          <small>Tanks ready for batch creation</small>
-        </div>
-        <div class="card-body">
-          <div class="table-responsive">
-            <table class="table table-striped table-hover">
-              <thead class="table-dark">
-                <tr>
-                  <th>Tank</th>
-                  <th>Available Litres</th>
-                  <th>Status</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {% for yield in approved_tanks %}
-                <tr>
-                  <td><strong>{{ yield.storage_tank }}</strong></td>
-                  <td>{{ yield.yield_litres }} L</td>
-                  <td><span class="badge bg-success">Approved</span></td>
-                  <td>
-                    <a class="btn btn-outline-primary btn-sm" href="{% url 'production:batch_form' %}?tank={{ yield.storage_tank }}">
-                      ➕ Create Batch
-                    </a>
-                  </td>
-                </tr>
-                {% empty %}
-                <tr>
-                  <td colspan="4" class="text-center text-muted">No tanks approved for production.</td>
-                </tr>
+    <form method="get" class="trace-filter" aria-label="Traceability filters">
+        <div>
+            <label for="batch_type">Collection Window</label>
+            <select name="batch_type" id="batch_type">
+                <option value="">All sessions</option>
+                {% for value,label in filter_options.batch_types %}
+                    <option value="{{ value }}" {% if filters.batch_type == value %}selected{% endif %}>{{ label }}</option>
                 {% endfor %}
-              </tbody>
-            </table>
-          </div>
+            </select>
         </div>
-      </div>
-    </div>
-  </div>
+        <div>
+            <label for="tank">Source Tank</label>
+            <select name="tank" id="tank">
+                <option value="">All tanks</option>
+                {% for tank in filter_options.tanks %}
+                    <option value="{{ tank }}" {% if filters.tank == tank %}selected{% endif %}>{{ tank }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div>
+            <label for="product">Product</label>
+            <select name="product" id="product">
+                <option value="">All products</option>
+                {% for value,label in filter_options.products %}
+                    <option value="{{ value }}" {% if filters.product == value %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div>
+            <label for="expiry_before">Expiry Before</label>
+            <input type="date" id="expiry_before" name="expiry_before" value="{{ filters.expiry_before }}" />
+        </div>
+        <div class="filter-actions">
+            <button type="submit" class="trace-btn primary">Apply Filters</button>
+            <a href="{% url 'lab:dashboard' %}" class="trace-btn ghost">Reset</a>
+        </div>
+    </form>
 
-  <!-- Pending Batches for Approval -->
-  <div class="row mb-4">
-    <div class="col-12">
-      <div class="card">
-        <div class="card-header bg-warning text-dark">
-          <h4 class="mb-0">⏳ Pending Batch Approvals</h4>
-          <small>Batches awaiting lab approval</small>
+    <section class="trace-panel" id="milk-collection">
+        <div class="panel-head">
+            <div>
+                <h2>Milk Collection Windows</h2>
+                <p>Sessions enforce arrival windows. Late submissions are auto-rejected.</p>
+            </div>
+            <div>
+                <span class="status-pill pass">✅ Passed</span>
+                <span class="status-pill pending">⏳ Pending</span>
+                <span class="status-pill fail">❌ Failed</span>
+            </div>
         </div>
-        <div class="card-body">
-          <div class="table-responsive">
-            <table class="table table-striped table-hover">
-              <thead class="table-dark">
-                <tr>
-                  <th>Batch ID</th>
-                  <th>Product Type</th>
-                  <th>Quantity Produced</th>
-                  <th>Source Tank</th>
-                  <th>Produced At</th>
-                  <th>Processed By</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {% for batch in pending_batches %}
-                <tr>
-                  <td>{{ batch.id }}</td>
-                  <td>{{ batch.product_type }}</td>
-                  <td>{{ batch.quantity_produced }}</td>
-                  <td>{{ batch.source_tank }}</td>
-                  <td>{{ batch.produced_at|date:"M d, Y H:i" }}</td>
-                  <td>{{ batch.processed_by }}</td>
-                  <td>
-                    {% if perms.lab.add_labbatchapproval %}
-                      <a class="btn btn-outline-success btn-sm me-1" href="{% url 'lab:approve_batch' batch_id=batch.id %}">
-                        ✅ Approve
-                      </a>
-                    {% endif %}
-                  </td>
-                </tr>
-                {% empty %}
-                <tr>
-                  <td colspan="7" class="text-center text-muted">No pending batches for approval.</td>
-                </tr>
-                {% endfor %}
-              </tbody>
-            </table>
-          </div>
+        {% if collection_rows %}
+            <div class="table-scroll">
+                <table class="trace-table">
+                    <thead>
+                        <tr>
+                            <th>Batch ID</th>
+                            <th>Collection Type</th>
+                            <th>Start</th>
+                            <th>End</th>
+                            <th>Clerk</th>
+                            <th>Volume (L)</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for row in collection_rows %}
+                        <tr>
+                            <td>#{{ row.batch_id }}</td>
+                            <td>{{ row.session }}</td>
+                            <td>{{ row.window_start|date:"M d, H:i"|default:"—" }}</td>
+                            <td>{{ row.window_end|date:"M d, H:i"|default:"—" }}</td>
+                            <td>{{ row.clerk }}</td>
+                            <td>{{ row.volume|floatformat:1 }}</td>
+                            <td>
+                                <span class="status-pill {{ row.status.variant }}">{{ row.status.icon }} {{ row.status.label }}</span>
+                                <small class="audit-note">Recorded {{ row.timestamp|date:"M d, H:i" }}</small>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <p class="empty-state">No milk batches match the selected filters.</p>
+        {% endif %}
+    </section>
+
+    <section class="trace-panel" id="lab-tests">
+        <div class="panel-head">
+            <div>
+                <h2>Lab Test Results</h2>
+                <p>Failed batch tests immediately block downstream production.</p>
+            </div>
         </div>
-      </div>
-    </div>
-  </div>
+        {% if lab_rows %}
+            <div class="table-scroll">
+                <table class="trace-table">
+                    <thead>
+                        <tr>
+                            <th>Batch ID</th>
+                            <th>Test ID</th>
+                            <th>Fat %</th>
+                            <th>SNF %</th>
+                            <th>Acidity</th>
+                            <th>Contaminants</th>
+                            <th>Result</th>
+                            <th>Batch Session</th>
+                            <th>Audit</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for row in lab_rows %}
+                        <tr>
+                            <td>#{{ row.batch_id }}</td>
+                            <td>#{{ row.test_id }}</td>
+                            <td>{{ row.fat_pct }}%</td>
+                            <td>{{ row.snf_pct }}%</td>
+                            <td>{{ row.acidity_pct }}%</td>
+                            <td>{{ row.contaminants }}</td>
+                            <td><span class="status-pill {{ row.status.variant }}">{{ row.status.icon }} {{ row.status.label }}</span></td>
+                            <td>{{ row.session }}</td>
+                            <td>
+                                <span class="audit-note">{{ row.tester.get_full_name|default:row.tester.username }} • {{ row.tested_at|date:"M d, H:i" }}</span>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <p class="empty-state">No lab tests for the active filters.</p>
+        {% endif %}
+    </section>
+
+    <section class="trace-panel" id="production-batches">
+        <div class="panel-head">
+            <div>
+                <h2>Production Batches</h2>
+                <p>Every batch must post a lab expiry before storage release.</p>
+            </div>
+        </div>
+        {% if production_rows %}
+            <div class="table-scroll">
+                <table class="trace-table">
+                    <thead>
+                        <tr>
+                            <th>Production Batch ID</th>
+                            <th>Tank ID</th>
+                            <th>Product Type</th>
+                            <th>Volume Used (L)</th>
+                            <th>Lab Expiry Test ID</th>
+                            <th>Expiry Date</th>
+                            <th>Status</th>
+                            <th>Audit</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for row in production_rows %}
+                        <tr>
+                            <td>#{{ row.production_id }}</td>
+                            <td>{{ row.tank }}</td>
+                            <td>{{ row.product }}</td>
+                            <td>{{ row.volume_used|floatformat:1 }}</td>
+                            <td>{% if row.lab_test_id %}#{{ row.lab_test_id }}{% else %}—{% endif %}</td>
+                            <td>{{ row.expiry_date|date:"M d, Y"|default:"—" }}</td>
+                            <td><span class="status-pill {{ row.status.variant }}">{{ row.status.icon }} {{ row.status.label }}</span></td>
+                            <td>
+                                <span class="audit-note">{{ row.processed_by.get_full_name|default:row.processed_by.username }} • {{ row.produced_at|date:"M d, H:i" }}</span>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <p class="empty-state">No production batches meet the selected filters.</p>
+        {% endif %}
+    </section>
+
+    <section class="trace-panel" id="storage">
+        <div class="panel-head">
+            <div>
+                <h2>Cold Storage Inventory</h2>
+                <p>Only expiry-issued lots are allowed into storage locations.</p>
+            </div>
+        </div>
+        {% if storage_rows %}
+            <div class="table-scroll">
+                <table class="trace-table">
+                    <thead>
+                        <tr>
+                            <th>Storage ID</th>
+                            <th>Production Batch ID</th>
+                            <th>Product</th>
+                            <th>Expiry Date</th>
+                            <th>Quantity</th>
+                            <th>Location</th>
+                            <th>Status</th>
+                            <th>Audit</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for row in storage_rows %}
+                        <tr>
+                            <td>#{{ row.storage_id }}</td>
+                            <td>#{{ row.batch_id }}</td>
+                            <td>{{ row.product }}</td>
+                            <td>{{ row.expiry_date|date:"M d, Y" }}</td>
+                            <td>{{ row.quantity|floatformat:1 }}</td>
+                            <td>{{ row.location }}</td>
+                            <td><span class="status-pill {{ row.status.variant }}">{{ row.status.icon }} {{ row.status.label }}</span></td>
+                            <td>
+                                <span class="audit-note">Last restocked {{ row.last_restocked|date:"M d, Y"|default:"—" }}</span>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <p class="empty-state">No storage inventory matches the filters.</p>
+        {% endif %}
+    </section>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.querySelectorAll('.trace-table tbody tr').forEach(function (row) {
+        row.style.transition = 'background 0.3s ease';
+        row.addEventListener('mouseenter', function () { row.style.background = 'rgba(15, 111, 255, 0.08)'; });
+        row.addEventListener('mouseleave', function () { row.style.background = 'transparent'; });
+    });
+</script>
 {% endblock %}

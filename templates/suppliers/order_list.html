@@ -1,29 +1,58 @@
 {% extends 'base.html' %}
 {% block content %}
-<h1>Supplier Orders</h1>
-<table>
-  <tr><th>Supplier</th><th>Item</th><th>Qty</th><th>Status</th><th>Expected</th><th>Actions</th></tr>
-  {% for order in orders %}
-  <tr>
-    <td>{{ order.supplier.name }}</td>
-    <td>{{ order.inventory_item.name }}</td>
-    <td>{{ order.quantity }}</td>
-    <td>{{ order.get_status_display }}</td>
-    <td>{{ order.expected_delivery }}</td>
-    <td>
-      <form method="post" action="{% url 'suppliers:update_order' order.pk %}">
-        {% csrf_token %}
-        <select name="status">
-          <option value="pending" {% if order.status == 'pending' %}selected{% endif %}>Pending</option>
-          <option value="delivered" {% if order.status == 'delivered' %}selected{% endif %}>Delivered</option>
-        </select>
-        <button type="submit">Update</button>
-      </form>
-    </td>
-  </tr>
-  {% empty %}
-  <tr><td colspan="6">No supplier orders yet.</td></tr>
-  {% endfor %}
-</table>
+<div class="mb-4">
+  <h1 class="h3 mb-1">Supplier Orders</h1>
+  <p class="text-muted mb-0">Track open purchase orders and delivery status.</p>
+</div>
+
+<div class="card shadow-sm">
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-striped table-hover align-middle mb-0">
+        <thead class="table-light">
+          <tr>
+            <th>Supplier</th>
+            <th>Item</th>
+            <th class="text-center">Qty</th>
+            <th>Status</th>
+            <th>Expected</th>
+            <th class="text-end">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for order in orders %}
+          <tr>
+            <td>{{ order.supplier.name }}</td>
+            <td>{{ order.inventory_item.name }}</td>
+            <td class="text-center">{{ order.quantity }}</td>
+            <td>
+              {% if order.status == 'delivered' %}
+                <span class="badge bg-success">Delivered</span>
+              {% else %}
+                <span class="badge bg-warning text-dark">{{ order.get_status_display }}</span>
+              {% endif %}
+            </td>
+            <td>{{ order.expected_delivery|date:"Y-m-d"|default:'—' }}</td>
+            <td class="text-end">
+              <form method="post" action="{% url 'suppliers:update_order' order.pk %}" class="d-inline-flex gap-2 align-items-center justify-content-end">
+                {% csrf_token %}
+                <select name="status" class="form-select form-select-sm w-auto">
+                  <option value="pending" {% if order.status == 'pending' %}selected{% endif %}>Pending</option>
+                  <option value="delivered" {% if order.status == 'delivered' %}selected{% endif %}>Delivered</option>
+                </select>
+                <button type="submit" class="btn btn-outline-primary btn-sm">Update</button>
+              </form>
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="6" class="text-center text-muted py-4">No supplier orders yet.</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
 {% endblock %}
 

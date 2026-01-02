@@ -1,0 +1,215 @@
+{% extends "base.html" %}
+
+{% block title %}User Management{% endblock %}
+
+{% block extra_css %}
+<style>
+    .management-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+        gap: 1.5rem;
+    }
+
+    .management-card {
+        background: #ffffff;
+        border-radius: 1.25rem;
+        padding: 1.5rem;
+        box-shadow: 0 18px 40px rgba(15, 23, 42, 0.08);
+        border: 1px solid rgba(148, 163, 184, 0.25);
+    }
+
+    .management-card h5 {
+        font-weight: 600;
+        margin-bottom: 1rem;
+    }
+
+    .table-card {
+        background: #ffffff;
+        border-radius: 1.1rem;
+        padding: 1.25rem;
+        box-shadow: 0 10px 25px rgba(15, 23, 42, 0.06);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-3">
+    <div class="d-flex justify-content-between align-items-center flex-wrap mb-4 gap-2">
+        <div>
+            <p class="text-uppercase small text-muted mb-1">Governance</p>
+            <h1 class="fw-bold mb-0">User &amp; Access Control</h1>
+        </div>
+    </div>
+
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    <div class="management-grid mb-4">
+        <div class="management-card">
+            <h5>Create User Account</h5>
+            <form method="post" class="vstack gap-3">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="create_user">
+                {% for field in user_form %}
+                    <div>
+                        <label class="form-label">{{ field.label }}{% if field.field.required %} *{% endif %}</label>
+                        {{ field }}
+                        {% if field.help_text %}<div class="form-text">{{ field.help_text }}</div>{% endif %}
+                        {% if field.errors %}<div class="text-danger small">{{ field.errors|join:', ' }}</div>{% endif %}
+                    </div>
+                {% endfor %}
+                <button class="btn btn-primary">Create User</button>
+            </form>
+        </div>
+
+        <div class="management-card">
+            <h5>Assign Groups to User</h5>
+            <form method="post" class="vstack gap-3">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="assign_groups">
+                {% for field in assignment_form %}
+                    <div>
+                        <label class="form-label">{{ field.label }}</label>
+                        {{ field }}
+                        {% if field.help_text %}<div class="form-text">{{ field.help_text }}</div>{% endif %}
+                        {% if field.errors %}<div class="text-danger small">{{ field.errors|join:', ' }}</div>{% endif %}
+                    </div>
+                {% endfor %}
+                <button class="btn btn-outline-primary">Update Groups</button>
+            </form>
+        </div>
+
+        <div class="management-card">
+            <h5>Create Group</h5>
+            <form method="post" class="vstack gap-3">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="create_group">
+                {% for field in group_form %}
+                    <div>
+                        <label class="form-label">{{ field.label }}</label>
+                        {{ field }}
+                        {% if field.errors %}<div class="text-danger small">{{ field.errors|join:', ' }}</div>{% endif %}
+                    </div>
+                {% endfor %}
+                <button class="btn btn-success">Create Group</button>
+            </form>
+        </div>
+
+        <div class="management-card">
+            <h5>Grant Permissions</h5>
+            <form method="post" class="vstack gap-3">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="update_group_permissions">
+                {% for field in permission_form %}
+                    <div>
+                        <label class="form-label">{{ field.label }}</label>
+                        {{ field }}
+                        {% if field.help_text %}<div class="form-text">{{ field.help_text }}</div>{% endif %}
+                        {% if field.errors %}<div class="text-danger small">{{ field.errors|join:', ' }}</div>{% endif %}
+                    </div>
+                {% endfor %}
+                <button class="btn btn-outline-success">Update Permissions</button>
+            </form>
+        </div>
+    </div>
+
+    <div class="table-card mb-4">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h5 class="mb-0">Users</h5>
+            <span class="badge bg-primary-subtle text-primary">{{ users|length }} total</span>
+        </div>
+        <div class="table-responsive">
+            <table class="table align-middle">
+                <thead>
+                    <tr>
+                        <th>Username</th>
+                        <th>Name</th>
+                        <th>Email</th>
+                        <th>Groups</th>
+                        <th>Status</th>
+                        <th class="text-end">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for user in users %}
+                        <tr>
+                            <td>{{ user.username }}</td>
+                            <td>{{ user.get_full_name|default:"-" }}</td>
+                            <td>{{ user.email|default:"-" }}</td>
+                            <td>
+                                {% if user.groups.all %}
+                                    {% for group in user.groups.all %}
+                                        <span class="badge bg-secondary-subtle text-secondary">{{ group.name }}</span>
+                                    {% empty %}—{% endfor %}
+                                {% else %}—{% endif %}
+                            </td>
+                            <td>
+                                {% if user.is_active %}<span class="badge bg-success-subtle text-success">Active</span>{% else %}<span class="badge bg-danger-subtle text-danger">Disabled</span>{% endif %}
+                            </td>
+                            <td class="text-end">
+                                <a class="btn btn-sm btn-primary me-1" href="{% url 'core:user_edit' user.id %}">Edit</a>
+                                <form method="post" class="d-inline">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="action" value="delete_user">
+                                    <input type="hidden" name="user_id" value="{{ user.id }}">
+                                    <button class="btn btn-sm btn-outline-danger" {% if user.id == request.user.id %}disabled{% endif %}>Delete</button>
+                                </form>
+                            </td>
+                        </tr>
+                    {% empty %}
+                        <tr><td colspan="6" class="text-center text-muted">No users found.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="table-card">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h5 class="mb-0">Groups</h5>
+            <span class="badge bg-dark-subtle text-dark">{{ groups|length }} total</span>
+        </div>
+        <div class="table-responsive">
+            <table class="table align-middle">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Permissions</th>
+                        <th class="text-end">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for group in groups %}
+                        <tr>
+                            <td>{{ group.name }}</td>
+                            <td>
+                                {% if group.permissions.all %}
+                                    {% for perm in group.permissions.all %}
+                                        <span class="badge bg-light text-dark border">{{ perm }}</span>
+                                    {% empty %}—{% endfor %}
+                                {% else %}—{% endif %}
+                            </td>
+                            <td class="text-end">
+                                <form method="post" class="d-inline">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="action" value="delete_group">
+                                    <input type="hidden" name="group_id" value="{{ group.id }}">
+                                    <button class="btn btn-sm btn-outline-danger">Delete</button>
+                                </form>
+                            </td>
+                        </tr>
+                    {% empty %}
+                        <tr><td colspan="3" class="text-center text-muted">No groups defined.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

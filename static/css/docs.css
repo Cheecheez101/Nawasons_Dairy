@@ -1,0 +1,159 @@
+:root {
+  --doc-bg: #f8f5ef;
+  --doc-card: #ffffff;
+  --doc-accent: #8a4d1c;
+  --doc-accent-muted: #c9864d;
+  --doc-border: #e6d9c8;
+  --doc-text: #2e2a27;
+}
+
+.docs-surface {
+  background: var(--doc-bg);
+  min-height: 100%;
+  padding-bottom: 3rem;
+}
+
+.doc-shell {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.doc-hero {
+  background: radial-gradient(circle at top right, rgba(255, 255, 255, 0.7), transparent),
+              linear-gradient(135deg, #fefcf8, #f0e2d1);
+  border: 1px solid var(--doc-border);
+  border-radius: 1.25rem;
+  padding: 2.5rem;
+  box-shadow: 0 15px 40px rgba(60, 40, 20, 0.08);
+}
+
+.doc-hero h1 {
+  font-family: 'Nora Fields', 'Dancing Script', serif;
+  font-size: 2.4rem;
+  color: var(--doc-accent);
+}
+
+.doc-hero p {
+  font-size: 1.05rem;
+  color: var(--doc-text);
+  max-width: 720px;
+}
+
+.doc-grid {
+  margin-top: 2rem;
+}
+
+.doc-toc {
+  position: sticky;
+  top: 90px;
+  background: var(--doc-card);
+  border: 1px solid var(--doc-border);
+  border-radius: 1.25rem;
+  padding: 1.5rem;
+  box-shadow: 0 10px 30px rgba(60, 40, 20, 0.05);
+}
+
+.doc-toc h2 {
+  font-size: 1.1rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--doc-accent);
+}
+
+.doc-toc a {
+  display: block;
+  color: var(--doc-text);
+  text-decoration: none;
+  padding: 0.35rem 0;
+  font-weight: 500;
+}
+
+.doc-toc a:hover,
+.doc-toc a:focus {
+  color: var(--doc-accent);
+}
+
+.doc-section {
+  background: var(--doc-card);
+  border: 1px solid var(--doc-border);
+  border-radius: 1.5rem;
+  padding: 2rem;
+  margin-bottom: 2rem;
+  box-shadow: 0 18px 45px rgba(60, 40, 20, 0.07);
+}
+
+.doc-section h2 {
+  font-size: 1.6rem;
+  color: var(--doc-accent);
+}
+
+.doc-subsection {
+  margin-top: 1.5rem;
+  padding-top: 1rem;
+  border-top: 1px dashed var(--doc-border);
+}
+
+.doc-subsection:first-of-type {
+  border-top: none;
+  padding-top: 0;
+}
+
+.doc-subsection h3 {
+  font-size: 1.25rem;
+  color: var(--doc-accent-muted);
+}
+
+.doc-section p,
+.doc-section li {
+  color: var(--doc-text);
+  line-height: 1.65;
+}
+
+.doc-section ul,
+.doc-section ol {
+  padding-left: 1.5rem;
+}
+
+.doc-callout {
+  border-left: 4px solid var(--doc-accent);
+  background: #fff9f2;
+  padding: 1rem 1.25rem;
+  border-radius: 0.5rem;
+  margin: 1.5rem 0;
+}
+
+.doc-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1rem 0;
+  font-size: 0.95rem;
+}
+
+.doc-table th,
+.doc-table td {
+  border: 1px solid var(--doc-border);
+  padding: 0.75rem 1rem;
+}
+
+.doc-table th {
+  background: #f6efe6;
+  color: var(--doc-accent);
+  letter-spacing: 0.03em;
+}
+
+.doc-equation {
+  font-family: 'Roboto Mono', monospace;
+  background: #1e1b16;
+  color: #fadde1;
+  padding: 0.85rem 1rem;
+  border-radius: 0.6rem;
+  display: inline-block;
+  margin: 0.9rem 0;
+}
+
+@media (max-width: 991px) {
+  .doc-toc {
+    position: static;
+    margin-bottom: 1.5rem;
+  }
+}
