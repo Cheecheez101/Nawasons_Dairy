@@ -1,0 +1,81 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container py-4">
+  <h2 class="mb-4">Inventory Overview</h2>
+  <div class="mb-3">
+    <a href="{% url 'storage:export_inventory_pdf' %}" class="btn btn-outline-primary btn-sm me-2">Export PDF</a>
+    <a href="{% url 'storage:export_inventory_excel' %}" class="btn btn-outline-success btn-sm">Export Excel</a>
+  </div>
+  <div class="row">
+    <div class="col-12">
+      <div class="card mb-4">
+        <div class="card-header bg-success text-white">Active Inventory</div>
+        <div class="card-body p-0">
+          <table class="table table-striped mb-0">
+            <thead><tr><th>Product</th><th>Packaging</th><th>Cartons</th><th>Loose</th><th>Expiry</th><th>Actions</th></tr></thead>
+            <tbody>
+              {% for lot in active_lots %}
+                <tr{% if lot.expiry_date and not lot.sold %} class="table-warning"{% endif %}>
+                  <td>{{ lot.packaging.product.name }}</td>
+                  <td>{{ lot.packaging.pack_size_ml }}ml x {{ lot.packaging.packets_per_carton }}</td>
+                  <td>{{ lot.cartons }}</td>
+                  <td>{{ lot.loose_units }}</td>
+                  <td>{{ lot.expiry_date }}</td>
+                  <td>
+                    {% if lot.id %}
+                      <a href="{% url 'storage:inventory_edit' lot.id %}" class="btn btn-sm btn-secondary">Edit</a>
+                    {% endif %}
+                    {% if lot.expiry_date and not lot.sold and lot.id %}
+                      <form method="post" action="{% url 'storage:move_to_expired' lot.id %}" style="display:inline;">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-sm btn-warning" onclick="return confirm('Move this lot to expired inventory?');">Move to Expired</button>
+                      </form>
+                    {% endif %}
+                  </td>
+                </tr>
+              {% empty %}
+                <tr><td colspan="6" class="text-muted">No active inventory.</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+    <div class="col-12">
+      <div class="card mb-4">
+        <div class="card-header bg-danger text-white">Expired Inventory</div>
+        <div class="card-body p-0">
+          <table class="table table-striped mb-0">
+            <thead><tr><th>Product</th><th>Packaging</th><th>Cartons</th><th>Loose</th><th>Expiry</th><th>Removed</th><th>Actions</th></tr></thead>
+            <tbody>
+              {% for lot in expired_lots %}
+                <tr>
+                  <td>{{ lot.product.name }}</td>
+                  <td>{{ lot.packaging.pack_size_ml }}ml x {{ lot.packaging.packets_per_carton }}</td>
+                  <td>{{ lot.cartons }}</td>
+                  <td>{{ lot.loose_units }}</td>
+                  <td>{{ lot.expiry_date }}</td>
+                  <td>{{ lot.removed_at|date:'Y-m-d' }}</td>
+                  <td>
+                    {% if not lot.sold %}
+                      <a href="{% url 'storage:expired_inventory_edit' lot.id %}" class="btn btn-sm btn-secondary">Edit</a>
+                      <form method="post" action="{% url 'storage:expired_inventory_remove' lot.id %}" style="display:inline;">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Remove this expired inventory?');">Remove</button>
+                      </form>
+                    {% else %}
+                      <span class="text-muted">Sold</span>
+                    {% endif %}
+                  </td>
+                </tr>
+              {% empty %}
+                <tr><td colspan="7" class="text-muted">No expired inventory.</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

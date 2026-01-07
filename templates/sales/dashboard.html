@@ -18,6 +18,55 @@
   </div>
 </div>
 
+<ul class="nav nav-tabs mb-3">
+  <li class="nav-item">
+    <a class="nav-link {% if not show_bulk %}active{% endif %}" href="{% url 'sales:dashboard' %}">All Sales</a>
+  </li>
+  <li class="nav-item">
+    <a class="nav-link {% if show_bulk %}active{% endif %}" href="{% url 'sales:dashboard' %}?bulk=1">Bulk Sales</a>
+  </li>
+</ul>
+
+<!-- Filters -->
+<form method="get" class="card shadow-sm mb-4">
+  <div class="card-body">
+    <div class="row g-3 align-items-end">
+      <div class="col-md-3">
+        <label for="filter_customer" class="form-label">Customer</label>
+        <input type="text" id="filter_customer" name="filter__customer" class="form-control" 
+               placeholder="e.g. John or 0712345678" 
+               value="{{ request.GET.filter__customer }}">
+      </div>
+      <div class="col-md-2">
+        <label for="filter_status" class="form-label">Payment Status</label>
+        <select id="filter_status" name="filter__payment_status" class="form-select">
+          <option value="">All Statuses</option>
+          <option value="paid" {% if request.GET.filter__payment_status == 'paid' %}selected{% endif %}>Paid</option>
+          <option value="partial" {% if request.GET.filter__payment_status == 'partial' %}selected{% endif %}>Partial</option>
+          <option value="pending" {% if request.GET.filter__payment_status == 'pending' %}selected{% endif %}>Pending</option>
+        </select>
+      </div>
+      <div class="col-md-2">
+        <label for="filter_id" class="form-label">Transaction ID</label>
+        <input type="text" id="filter_id" name="filter__transaction_id" class="form-control" 
+               placeholder="e.g. TXN-001" 
+               value="{{ request.GET.filter__transaction_id }}">
+      </div>
+      <div class="col-md-2">
+        <label for="filter_date" class="form-label">Date</label>
+        <input type="date" id="filter_date" name="filter__created_at" class="form-control" 
+               value="{{ request.GET.filter__created_at }}">
+      </div>
+      <div class="col-md-3 d-flex gap-2">
+        <button type="submit" class="btn btn-primary flex-grow-1">
+          <i class="bi bi-funnel me-1"></i> Filter
+        </button>
+        <a href="{% url 'sales:dashboard' %}" class="btn btn-outline-secondary">Reset</a>
+      </div>
+    </div>
+  </div>
+</form>
+
 <div class="card shadow-sm">
   <div class="card-body p-0">
     <div class="table-responsive">
@@ -26,6 +75,8 @@
           <tr>
             <th data-filter-key="transaction_id">ID</th>
             <th data-filter-key="customer">Customer</th>
+            <th>Products</th>
+            <th>Qty</th>
             <th data-filter-key="total_amount">Total</th>
             <th data-filter-key="payment_status">Status</th>
             <th data-filter-key="created_at">Date</th>
@@ -35,8 +86,22 @@
         <tbody>
           {% for tx in transactions %}
           <tr>
-            <td class="fw-semibold">{{ tx.transaction_id }}</td>
+            <td class="fw-semibold"><code>{{ tx.transaction_id }}</code></td>
             <td>{{ tx.customer_display_name }}</td>
+            <td>
+              {% for item in tx.items.all %}
+                <span class="badge bg-light text-dark me-1">{{ item.inventory_item.name }}</span>
+              {% empty %}
+                <span class="text-muted">—</span>
+              {% endfor %}
+            </td>
+            <td>
+              {% for item in tx.items.all %}
+                <span class="badge bg-secondary me-1">{{ item.quantity|floatformat:0 }}</span>
+              {% empty %}
+                <span class="text-muted">—</span>
+              {% endfor %}
+            </td>
             <td>KES {{ tx.total_amount|floatformat:2 }}</td>
             <td>
               {% if tx.payment_status == 'paid' %}
@@ -68,7 +133,7 @@
           </tr>
           {% empty %}
           <tr>
-            <td colspan="7" class="text-center text-muted py-4">No sales yet.</td>
+            <td colspan="8" class="text-center text-muted py-4">No sales yet.</td>
           </tr>
           {% endfor %}
         </tbody>

@@ -8,6 +8,40 @@
         <h2 class="h4 mb-0">Create Production Batch</h2>
       </div>
       <div class="card-body">
+        {% if tanks_info %}
+        <div class="mb-4 p-3 bg-light border rounded">
+          <h5 class="mb-3">Tank Status</h5>
+          <div class="row g-3">
+            {% for tank in tanks_info %}
+            <div class="col-md-6 col-lg-4">
+              <div class="card border-0">
+                <div class="card-body p-2">
+                  <h6 class="card-title mb-2">{{ tank.name }}</h6>
+                  <div class="mb-2">
+                    <div class="progress" style="height: 20px;">
+                      {% if tank.percentage > 80 %}
+                        <div class="progress-bar bg-success" role="progressbar" style="width: {{ tank.percentage }}%" aria-valuenow="{{ tank.percentage }}" aria-valuemin="0" aria-valuemax="100"></div>
+                      {% elif tank.percentage > 50 %}
+                        <div class="progress-bar bg-info" role="progressbar" style="width: {{ tank.percentage }}" aria-valuenow="{{ tank.percentage }}" aria-valuemin="0" aria-valuemax="100"></div>
+                      {% elif tank.percentage > 20 %}
+                        <div class="progress-bar bg-warning" role="progressbar" style="width: {{ tank.percentage }}%" aria-valuenow="{{ tank.percentage }}" aria-valuemin="0" aria-valuemax="100"></div>
+                      {% else %}
+                        <div class="progress-bar bg-danger" role="progressbar" style="width: {{ tank.percentage }}%" aria-valuenow="{{ tank.percentage }}" aria-valuemin="0" aria-valuemax="100"></div>
+                      {% endif %}
+                    </div>
+                  </div>
+                  <small class="text-muted">
+                    <strong>{{ tank.total_litres|floatformat:2 }}</strong> / {{ tank.capacity_litres|floatformat:0 }} L
+                    <span class="badge bg-secondary ms-1">{{ tank.percentage|floatformat:1 }}%</span>
+                  </small>
+                </div>
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+        {% endif %}
+
         <form method="post" class="form-styled">
           {% csrf_token %}
 

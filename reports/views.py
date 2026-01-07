@@ -395,22 +395,32 @@ class ReportsDashboardView(LoginRequiredMixin, PermissionRequiredMixin, View):
     def _build_inventory_reports(self, items_queryset, transactions_queryset, supplier_orders, storage_queryset):
         stock_rows = []
         reorder_rows = []
+        # Patch: Use cold storage cartons/loose_units for stock alerts if available
+        from storage.models import ColdStorageInventory
         for item in items_queryset.order_by('name')[:20]:
+            # Try to sum all cold storage lots for this item
+            lots = ColdStorageInventory.objects.filter(packaging__product=item)
+            total_units = 0
+            for lot in lots:
+                total_units += lot.total_units()
+            # Fallback to current_quantity if no lots
+            display_qty = total_units if total_units else item.current_quantity
             coverage = self._coverage_label(item)
             status, status_label = self._inventory_status(item)
             stock_rows.append({
                 'item': item.name,
-                'qty': self._format_number(item.current_quantity),
+                'qty': self._format_number(display_qty),
                 'unit': item.unit,
                 'coverage': coverage,
                 'status': status,
                 'status_label': status_label,
             })
-            if item.needs_reorder:
-                status = 'critical' if item.current_quantity <= 0 else 'warning'
+            reorder_check = total_units if total_units else item.current_quantity
+            if reorder_check <= item.reorder_threshold:
+                status = 'critical' if reorder_check <= 0 else 'warning'
                 reorder_rows.append({
                     'item': item.name,
-                    'current': self._format_number(item.current_quantity),
+                    'current': self._format_number(reorder_check),
                     'threshold': self._format_number(item.reorder_threshold),
                     'reorder': self._format_number(item.reorder_quantity or item.reorder_threshold),
                     'status': status,
@@ -452,10 +462,18 @@ class ReportsDashboardView(LoginRequiredMixin, PermissionRequiredMixin, View):
         storage_rows = []
         storage_alerts = []
         if storage_queryset is not None:
+            # Use cartons*packets_per_carton + loose_units as total units
+            from django.db.models import F, ExpressionWrapper, IntegerField, Sum
             location_totals = (
                 storage_queryset
+                .annotate(
+                    total_units=ExpressionWrapper(
+                        F('cartons') * F('packaging__packets_per_carton') + F('loose_units'),
+                        output_field=IntegerField()
+                    )
+                )
                 .values('location__name', 'location__capacity', 'location__location_type')
-                .annotate(current=Sum('quantity'))
+                .annotate(current=Sum('total_units'))
                 .order_by('location__name')
             )
             for row in location_totals:
@@ -484,11 +502,11 @@ class ReportsDashboardView(LoginRequiredMixin, PermissionRequiredMixin, View):
                 status_label = 'Expired' if status == 'critical' else 'Near expiry'
                 storage_alerts.append({
                     'storage_id': lot.storage_id,
-                    'product': lot.product,
+                    'product': lot.packaging.product if lot.packaging else None,
                     'location': lot.location.name if lot.location else '—',
                     'expiry': lot.expiry_date,
                     'days_left': days_left,
-                    'quantity': self._format_number(lot.quantity),
+                    'quantity': self._format_number(lot.total_units()),
                     'status': status,
                     'status_label': status_label,
                 })

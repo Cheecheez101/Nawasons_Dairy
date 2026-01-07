@@ -44,9 +44,9 @@
         <tr>
           <th scope="col">Storage ID</th>
           <th scope="col">Batch ID</th>
-          <th scope="col">Product</th>
+          <th scope="col">Product / Packaging</th>
           <th scope="col">Expiry</th>
-          <th scope="col">Quantity (kg)</th>
+          <th scope="col">Quantity (units)</th>
           <th scope="col">Location</th>
           <th scope="col">Status</th>
           <th scope="col">Audit trail</th>
@@ -60,9 +60,21 @@
         <tr class="border-top">
           <td class="fw-semibold">#{{ item.storage_id }}</td>
           <td>#{{ item.production_batch.id }}</td>
-          <td>{{ item.product }}</td>
+          <td>
+            {% if item.packaging %}
+              {{ item.packaging }}
+            {% else %}
+              {{ item.production_batch.get_product_type_display }}
+            {% endif %}
+          </td>
           <td>{{ item.expiry_date|date:"M d, Y" }}</td>
-          <td>{{ item.quantity }}</td>
+          <td>
+            {% if item.packaging %}
+              {{ item.cartons }} carton(s) + {{ item.loose_units }} loose — total {{ item.total_units }}
+            {% else %}
+              {{ item.total_units|default:'—' }}
+            {% endif %}
+          </td>
           <td>
             <div class="fw-semibold">{{ item.location.name }}</div>
             <small class="text-muted">{{ item.location.get_location_type_display }}</small>

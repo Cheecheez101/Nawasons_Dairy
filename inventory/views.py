@@ -2,13 +2,15 @@ from datetime import timedelta
 
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
-from django.db.models import F, Sum
+from django.db.models import F, Q, Sum, ExpressionWrapper, DecimalField
 from django.shortcuts import render, redirect, get_object_or_404
+from django.db.models.deletion import ProtectedError
 from django.utils import timezone
 from django.views import View
 
 from lab.models import LabBatchApproval
 from production.models import MilkYield
+from production.models import ProductPrice
 from storage.models import ColdStorageInventory
 
 from .forms import InventoryItemForm
@@ -20,7 +22,44 @@ class InventoryDashboardView(LoginRequiredMixin, PermissionRequiredMixin, View):
 
     def get(self, request):
         # All inventory items
-        items = list(InventoryItem.objects.all())
+        items_qs = InventoryItem.objects.all()
+        
+        # Apply filters for items table
+        item_search = request.GET.get('item_q', '').strip()
+        if item_search:
+            items_qs = items_qs.filter(
+                Q(name__icontains=item_search) | Q(sku__icontains=item_search)
+            )
+        
+        category = request.GET.get('category', '').strip()
+        if category:
+            items_qs = items_qs.filter(product_category=category)
+        
+        stock_status = request.GET.get('stock_status', '').strip()
+        if stock_status == 'low':
+            items_qs = items_qs.filter(current_quantity__lte=F('reorder_threshold'), current_quantity__gt=0)
+        elif stock_status == 'out':
+            items_qs = items_qs.filter(current_quantity__lte=0)
+        elif stock_status == 'in_stock':
+            items_qs = items_qs.filter(current_quantity__gt=F('reorder_threshold'))
+        
+        items = list(items_qs)
+
+        # Attach packaging and bulk pricing metadata to each inventory item for display
+        for item in items:
+            try:
+                pkg = item.packagings.order_by('-pack_size_ml').first()
+                item.pack_size_ml = getattr(pkg, 'pack_size_ml', None)
+                item.packets_per_carton = getattr(pkg, 'packets_per_carton', None)
+            except Exception:
+                item.pack_size_ml = None
+                item.packets_per_carton = None
+
+            try:
+                pp = ProductPrice.current_for_inventory(item)
+                item.bulk_price_per_carton = getattr(pp, 'bulk_price_per_carton', None)
+            except Exception:
+                item.bulk_price_per_carton = None
 
         # Items needing reorder (DB-level filter using fields)
         low_stock_items = list(
@@ -36,11 +75,15 @@ class InventoryDashboardView(LoginRequiredMixin, PermissionRequiredMixin, View):
         batch_ids = {item.batch_id for item in items if item.batch_id}
         storage_quantities = {}
         if batch_ids:
+            total_units_expr = ExpressionWrapper(
+                F('cartons') * F('packaging__packets_per_carton') + F('loose_units'),
+                output_field=DecimalField(max_digits=12, decimal_places=2),
+            )
             storage_totals = (
                 ColdStorageInventory.objects
                 .filter(production_batch_id__in=batch_ids)
                 .values("production_batch_id")
-                .annotate(total_quantity=Sum("quantity"))
+                .annotate(total_quantity=Sum(total_units_expr))
             )
             storage_quantities = {
                 entry["production_batch_id"]: entry["total_quantity"]
@@ -96,23 +139,32 @@ class InventoryDashboardView(LoginRequiredMixin, PermissionRequiredMixin, View):
         expiring_inventory = []
         for lot in storage_qs.filter(expiry_date__lte=alert_cutoff).order_by("expiry_date"):
             days_left = (lot.expiry_date - today).days
+            # Use total units (cartons*packets + loose_units)
+            try:
+                total = lot.total_units()
+            except Exception:
+                total = getattr(lot, 'loose_units', 0) or 0
             expiring_inventory.append({
                 "storage_id": lot.storage_id,
-                "product": lot.product,
+                "product": str(lot.packaging) if lot.packaging else lot.production_batch.get_product_type_display(),
                 "production_batch": lot.production_batch,
                 "expiry_date": lot.expiry_date,
                 "days_left": days_left,
-                "quantity": lot.quantity,
-                "unit": "kg",
+                "quantity": total,
+                "unit": "units",
                 "location": lot.location.name if lot.location else "—",
                 "status": lot.status,
             })
 
         storage_locations = []
+        total_units_expr = ExpressionWrapper(
+            F('cartons') * F('packaging__packets_per_carton') + F('loose_units'),
+            output_field=DecimalField(max_digits=12, decimal_places=2),
+        )
         location_totals = (
             storage_qs
             .values("location__name", "location__location_type", "location__capacity")
-            .annotate(on_hand=Sum("quantity"))
+            .annotate(on_hand=Sum(total_units_expr))
             .order_by("location__name")
         )
         for entry in location_totals:
@@ -210,6 +262,35 @@ class InventoryItemDeleteView(LoginRequiredMixin, PermissionRequiredMixin, View)
     def post(self, request, pk):
         item = get_object_or_404(InventoryItem, pk=pk)
         name = item.name
-        item.delete()
-        messages.success(request, f"{name} removed from inventory.")
+        try:
+            item.delete()
+            messages.success(request, f"{name} removed from inventory.")
+        except ProtectedError as exc:
+            # exc.protected_objects may not be available on all Django versions,
+            # but exc.args[1] typically contains the set of blocking objects.
+            blocked = set()
+            if hasattr(exc, 'protected_objects'):
+                blocked = set(exc.protected_objects)
+            elif len(exc.args) > 1 and exc.args[1]:
+                try:
+                    blocked = set(exc.args[1])
+                except Exception:
+                    blocked = set()
+
+            # Build a short human-readable list of blocking references
+            blocked_list = []
+            for obj in blocked:
+                try:
+                    blocked_list.append(str(obj))
+                except Exception:
+                    blocked_list.append(repr(obj))
+
+            if blocked_list:
+                messages.error(
+                    request,
+                    "Cannot delete this inventory item because it is referenced by other records: "
+                    + ", ".join(blocked_list)
+                )
+            else:
+                messages.error(request, "Cannot delete this inventory item because related records protect it.")
         return redirect("inventory:dashboard")

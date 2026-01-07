@@ -3,15 +3,19 @@
 <div class="container py-4">
   <div class="form-shell">
     <div class="card shadow-sm">
-      <div class="card-header bg-light">
-        <h1 class="h4 mb-0">Register Cow</h1>
+      <div class="card-header bg-light d-flex justify-content-between align-items-center">
+        <h1 class="h4 mb-0">{% if cow %}Edit Cow: {{ cow.name|default:cow.cow_id }}{% else %}Register Cow{% endif %}</h1>
+        {% if cow %}
+        <span class="badge bg-secondary">{{ cow.cow_id }}</span>
+        {% endif %}
       </div>
       <div class="card-body">
         <form method="post" class="form-styled">
           {% csrf_token %}
           {% include "partials/form_fields.html" with form=form %}
-          <div class="d-flex justify-content-end gap-2">
-            <button type="submit" class="btn btn-primary">Save Cow</button>
+          <div class="d-flex justify-content-between gap-2 mt-3">
+            <a href="{% url 'production:cow_list' %}" class="btn btn-outline-secondary">Cancel</a>
+            <button type="submit" class="btn btn-primary">{% if cow %}Update Cow{% else %}Save Cow{% endif %}</button>
           </div>
         </form>
       </div>

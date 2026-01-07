@@ -92,29 +92,43 @@
                 </ul>
               </li>
             {% endif %}
-            {% if perms.storage.view_coldstorageinventory %}
+            {% if perms.storage.view_coldstorageinventory or perms.storage.view_storagelocation %}
               <li class="nav-item dropdown">
                 <a class="nav-link dropdown-toggle" href="#" id="navStorage" role="button" data-bs-toggle="dropdown" aria-expanded="false"><i class="bi bi-hdd-stack me-2"></i>Storage</a>
                 <ul class="dropdown-menu dropdown-menu-dark shadow" aria-labelledby="navStorage">
-                  <li><a class="dropdown-item" href="{% url 'storage:storage_list' %}"><i class="bi bi-thermometer-snow me-2"></i>Cold storage inventory</a></li>
-                  <li><a class="dropdown-item" href="{% url 'storage:storage_locations' %}"><i class="bi bi-diagram-3 me-2"></i>Storage areas</a></li>
+                  {% if perms.storage.view_coldstorageinventory %}
+                    <li><a class="dropdown-item" href="{% url 'storage:storage_list' %}"><i class="bi bi-thermometer-snow me-2"></i>Cold storage inventory</a></li>
+                  {% endif %}
+                  {% if perms.storage.view_packaging %}
+                    <li><a class="dropdown-item" href="{% url 'storage:packaging_list' %}"><i class="bi bi-box-seam me-2"></i>Packaging rules</a></li>
+                  {% endif %}
+                  {% if perms.storage.view_storagelocation %}
+                    <li><a class="dropdown-item" href="{% url 'storage:storage_locations' %}"><i class="bi bi-diagram-3 me-2"></i>Storage areas</a></li>
+                  {% endif %}
+                  <li><a class="dropdown-item" href="{% url 'storage:expired_inventory_dashboard' %}"><i class="bi bi-exclamation-triangle me-2"></i>Expired inventory</a></li>
                 </ul>
               </li>
             {% endif %}
-            {% if perms.production.add_cow or perms.production.approve_milk or perms.production.view_productprice or perms.production.add_productionbatch %}
+            {% if perms.production.view_cow or perms.production.add_cow or perms.production.view_productprice or perms.production.add_productionbatch %}
               <li class="nav-item dropdown">
                 <a class="nav-link dropdown-toggle" href="#" id="navProduction" role="button" data-bs-toggle="dropdown" aria-expanded="false"><i class="bi bi-gear-wide-connected me-2"></i>Production</a>
                 <ul class="dropdown-menu dropdown-menu-dark shadow" aria-labelledby="navProduction">
-                  <li><a class="dropdown-item" href="{% url 'production:cow_list' %}"><i class="bi bi-clipboard-data me-2"></i>Cow dashboard</a></li>
+                  {% if perms.production.view_cow %}
+                    <li><a class="dropdown-item" href="{% url 'production:cow_list' %}"><i class="bi bi-clipboard-data me-2"></i>Cow dashboard</a></li>
+                  {% endif %}
                   {% if perms.production.add_cow %}
-                    <li><a class="dropdown-item" href="{% url 'production:cow_create' %}"><i class="fas fa-cow me-2"></i>Cows</a></li>
-                    <li><a class="dropdown-item" href="{% url 'production:yield_create' %}"><i class="bi bi-droplet-half me-2"></i>Milk yields</a></li>
+                    <li><a class="dropdown-item" href="{% url 'production:cow_create' %}"><i class="fas fa-cow me-2"></i>Register cow</a></li>
+                  {% endif %}
+                  {% if perms.production.add_milkyield %}
+                    <li><a class="dropdown-item" href="{% url 'production:yield_create' %}"><i class="bi bi-droplet-half me-2"></i>Record milk yield</a></li>
                   {% endif %}
                   {% if perms.production.add_productionbatch %}
                     <li><a class="dropdown-item" href="{% url 'production:batch_form' %}"><i class="bi bi-bezier me-2"></i>Create batch</a></li>
                   {% endif %}
+                  {% if perms.production.view_productionbatch %}
+                    <li><a class="dropdown-item" href="{% url 'production:batch_list' %}"><i class="bi bi-list-ul me-2"></i>View batches</a></li>
+                  {% endif %}
                   {% if perms.production.view_productprice %}
-                    <li><a class="dropdown-item" href="{% url 'production:price_list' %}"><i class="bi bi-journal-text me-2"></i>Price change logs</a></li>
                     <li><a class="dropdown-item" href="{% url 'production:price_list' %}"><i class="bi bi-currency-dollar me-2"></i>Product prices</a></li>
                   {% endif %}
                 </ul>
@@ -129,9 +143,24 @@
                 </ul>
               </li>
             {% endif %}
+            {% if perms.sellers.view_seller or perms.sellers.view_sellertransaction %}
+              <li class="nav-item dropdown">
+                <a class="nav-link dropdown-toggle" href="#" id="navSellers" role="button" data-bs-toggle="dropdown" aria-expanded="false"><i class="bi bi-shop me-2"></i>Sellers</a>
+                <ul class="dropdown-menu dropdown-menu-dark shadow" aria-labelledby="navSellers">
+                  <li><a class="dropdown-item" href="{% url 'seller_list' %}"><i class="bi bi-card-list me-2"></i>Seller list</a></li>
+                  <li><a class="dropdown-item" href="{% url 'add_seller' %}"><i class="bi bi-person-plus me-2"></i>Add seller</a></li>
+                  <li><a class="dropdown-item" href="{% url 'serve_seller' %}"><i class="bi bi-bag-plus me-2"></i>Serve seller</a></li>
+                  <li><a class="dropdown-item" href="{% url 'seller_transactions' %}"><i class="bi bi-list-check me-2"></i>Seller transactions</a></li>
+                  <li><a class="dropdown-item" href="{% url 'seller_distribution_report' %}"><i class="bi bi-bar-chart me-2"></i>Distribution report</a></li>
+                  <li><a class="dropdown-item" href="{% url 'seller_product_report' %}"><i class="bi bi-box-seam me-2"></i>Product report</a></li>
+                  <li><a class="dropdown-item" href="{% url 'combined_inventory_impact_report' %}"><i class="bi bi-diagram-3 me-2"></i>Inventory impact</a></li>
+                </ul>
+              </li>
+            {% endif %}
             {% if perms.reports.view_report or perms.reports.view_reports_dashboard %}
               <li class="nav-item"><a class="nav-link" href="{% url 'reports:index' %}"><i class="bi bi-bar-chart me-2"></i>Reports</a></li>
             {% endif %}
+           
             <li class="nav-item"><a class="nav-link" href="{% url 'core:profile_settings' %}"><i class="bi bi-gear me-2"></i>Settings</a></li>
             {% if perms.auth.view_user %}
               <li class="nav-item"><a class="nav-link" href="{% url 'core:user_management' %}"><i class="bi bi-people me-2"></i>User management</a></li>

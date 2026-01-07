@@ -257,13 +257,54 @@
             <h2 class="h5 mb-0">All Items</h2>
             <small class="text-muted">Track every SKU, stock level, and reorder threshold.</small>
           </div>
-          {% if perms.inventory.add_inventoryitem %}
-            <a href="{% url 'inventory:item_create' %}" class="btn btn-outline-primary btn-sm">
-              <i class="bi bi-plus-circle me-1"></i> New Item
-            </a>
-          {% endif %}
+          <div class="d-flex flex-wrap gap-2">
+            <a href="{% url 'inventory:dashboard' %}" class="btn btn-outline-secondary btn-sm">Reset</a>
+            {% if perms.inventory.add_inventoryitem %}
+              <a href="{% url 'inventory:item_create' %}" class="btn btn-outline-primary btn-sm">
+                <i class="bi bi-plus-circle me-1"></i> New Item
+              </a>
+            {% endif %}
+          </div>
         </div>
       </div>
+      
+      <!-- Filters -->
+      <div class="card-body border-bottom bg-light">
+        <form method="get" class="row g-2 align-items-end">
+          <div class="col-md-3">
+            <label for="item_search" class="form-label small text-muted">Search</label>
+            <input type="text" id="item_search" name="item_q" class="form-control form-control-sm" 
+                   placeholder="e.g. Fresh Milk or SKU-001" 
+                   value="{{ request.GET.item_q }}">
+          </div>
+          <div class="col-md-2">
+            <label for="category" class="form-label small text-muted">Category</label>
+            <select id="category" name="category" class="form-select form-select-sm">
+              <option value="">All Categories</option>
+              <option value="milk" {% if request.GET.category == 'milk' %}selected{% endif %}>Milk</option>
+              <option value="yogurt" {% if request.GET.category == 'yogurt' %}selected{% endif %}>Yogurt</option>
+              <option value="mala" {% if request.GET.category == 'mala' %}selected{% endif %}>Mala</option>
+              <option value="ghee" {% if request.GET.category == 'ghee' %}selected{% endif %}>Ghee</option>
+              <option value="other" {% if request.GET.category == 'other' %}selected{% endif %}>Other</option>
+            </select>
+          </div>
+          <div class="col-md-2">
+            <label for="stock_status" class="form-label small text-muted">Stock Status</label>
+            <select id="stock_status" name="stock_status" class="form-select form-select-sm">
+              <option value="">All</option>
+              <option value="low" {% if request.GET.stock_status == 'low' %}selected{% endif %}>Low Stock</option>
+              <option value="in_stock" {% if request.GET.stock_status == 'in_stock' %}selected{% endif %}>In Stock</option>
+              <option value="out" {% if request.GET.stock_status == 'out' %}selected{% endif %}>Out of Stock</option>
+            </select>
+          </div>
+          <div class="col-md-3 d-flex gap-2">
+            <button type="submit" class="btn btn-primary btn-sm flex-grow-1">
+              <i class="bi bi-funnel me-1"></i> Filter
+            </button>
+          </div>
+        </form>
+      </div>
+      
       <div class="card-body p-0">
         <div class="table-responsive">
           <table class="table table-hover align-middle mb-0">
@@ -279,7 +320,15 @@
             <tbody>
               {% for item in items %}
               <tr>
-                <td>{{ item.name }}</td>
+                <td>
+                  <div class="fw-semibold">{{ item.name }}</div>
+                  {% if item.pack_size_ml and item.packets_per_carton %}
+                    <div class="small text-muted">{{ item.pack_size_ml }}ml × {{ item.packets_per_carton }}/carton</div>
+                  {% endif %}
+                  {% if item.bulk_price_per_carton %}
+                    <div class="small text-success">Bulk: KES {{ item.bulk_price_per_carton }} / carton</div>
+                  {% endif %}
+                </td>
                 <td>{{ item.sku }}</td>
                 <td>
                   <div class="fw-semibold">{{ item.display_quantity|default:item.current_quantity }} {{ item.unit }}</div>

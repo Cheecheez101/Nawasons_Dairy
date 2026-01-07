@@ -9,7 +9,10 @@ from .models import MilkYield, Cow, ProductPrice, ProductionBatch
 class MilkYieldForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields['cow'].label_from_instance = lambda obj: f"{obj.name} ({obj.cow_id})"
+        # Format cow dropdown with name and ID
+        self.fields['cow'].label_from_instance = lambda obj: f"{obj.name} ({obj.cow_id})" if obj.name else obj.cow_id
+        self.fields['cow'].queryset = Cow.objects.filter(is_active=True).order_by('name', 'cow_id')
+        
         session_field = self.fields['session']
         session_field.help_text = "Automatically aligns with the current collection window."
 
@@ -37,8 +40,11 @@ class MilkYieldForm(forms.ModelForm):
             'quality_notes',
         ]
         widgets = {
-            'yield_litres': forms.NumberInput(attrs={'step': '0.1'}),
-            'quality_notes': forms.Textarea(attrs={'rows': 2}),
+            'cow': forms.Select(attrs={'class': 'form-control form-select'}),
+            'session': forms.Select(attrs={'class': 'form-control form-select'}),
+            'yield_litres': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.1', 'min': '0', 'placeholder': 'Litres'}),
+            'quality_grade': forms.Select(attrs={'class': 'form-control form-select'}),
+            'quality_notes': forms.Textarea(attrs={'class': 'form-control', 'rows': 2, 'placeholder': 'Optional notes about milk quality'}),
         }
 
     def clean(self):
@@ -66,25 +72,46 @@ class MilkYieldForm(forms.ModelForm):
 
 
 class CowForm(forms.ModelForm):
+    BREED_CHOICES = [
+        ('', '---------'),
+        ('friesian', 'Friesian'),
+        ('jersey', 'Jersey'),
+        ('ayrshire', 'Ayrshire'),
+        ('guernsey', 'Guernsey'),
+        ('sahiwal', 'Sahiwal'),
+        ('brown_swiss', 'Brown Swiss'),
+        ('holstein', 'Holstein'),
+        ('crossbreed', 'Crossbreed'),
+        ('other', 'Other'),
+    ]
+
+    breed = forms.ChoiceField(
+        choices=BREED_CHOICES,
+        widget=forms.Select(attrs={'class': 'form-control form-select'})
+    )
+
     class Meta:
         model = Cow
-        fields = '__all__'
+        fields = ['cow_id', 'name', 'breed', 'date_of_birth', 'health_status', 
+                  'stall_location', 'daily_capacity_litres', 'is_active']
         widgets = {
-            'name': forms.TextInput(attrs={'class': 'form-control'}),
-            'breed': forms.TextInput(attrs={'class': 'form-control'}),
-            'age': forms.NumberInput(attrs={'class': 'form-control'}),
-            'health_status': forms.TextInput(attrs={'class': 'form-control'}),
+            'cow_id': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'e.g. COW-001'}),
+            'name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Cow name (optional)'}),
+            'date_of_birth': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'health_status': forms.Select(attrs={'class': 'form-control form-select'}),
+            'stall_location': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'e.g. Barn A, Stall 5'}),
+            'daily_capacity_litres': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.1', 'min': '0'}),
+            'is_active': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
         }
 
 
 class ProductPriceForm(forms.ModelForm):
     class Meta:
         model = ProductPrice
-        fields = '__all__'
+        fields = ['inventory_item', 'price']  # Exclude updated_by - set by view
         widgets = {
-            'inventory_item': forms.Select(attrs={'class': 'form-control'}),
-            'price': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
-            'effective_date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'inventory_item': forms.Select(attrs={'class': 'form-control form-select'}),
+            'price': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'min': '0'}),
         }
 
     def __init__(self, *args, **kwargs):
@@ -96,9 +123,11 @@ class ProductPriceForm(forms.ModelForm):
             .exclude(id__in=assigned_ids)
             .order_by('name')
         )
+        self.fields['inventory_item'].label_from_instance = lambda obj: f"{obj.name} ({obj.sku})"
         if self.instance.pk:
             self.fields['inventory_item'].initial = self.instance.inventory_item
             self.fields['inventory_item'].disabled = True
+            self.fields['price'].help_text = f"Current price: KES {self.instance.price}"
 
 
 class ProductionBatchForm(forms.ModelForm):
@@ -109,23 +138,25 @@ class ProductionBatchForm(forms.ModelForm):
         model = ProductionBatch
         exclude = ['processed_by', 'moved_to_lab', 'produced_at', 'status']
         widgets = {
-            'source_tank': forms.Select(attrs={'class': 'form-control'}),
-            'product_type': forms.Select(attrs={'class': 'form-control'}),
-            'sku': forms.Select(attrs={'class': 'form-control'}),
-            'quantity_produced': forms.NumberInput(attrs={'class': 'form-control', 'min': '0.01', 'step': '0.01'}),
-            'liters_used': forms.NumberInput(attrs={'class': 'form-control', 'min': '0.01', 'step': '0.01'}),
+            'source_tank': forms.Select(attrs={'class': 'form-control form-select'}),
+            'product_type': forms.Select(attrs={'class': 'form-control form-select'}),
+            'sku': forms.Select(attrs={'class': 'form-control form-select'}),
+            'quantity_produced': forms.NumberInput(attrs={'class': 'form-control', 'min': '0.01', 'step': '0.01', 'placeholder': 'Units produced'}),
+            'liters_used': forms.NumberInput(attrs={'class': 'form-control', 'min': '0.01', 'step': '0.01', 'placeholder': 'Litres consumed'}),
         }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         # Populate SKU choices from InventoryItem
         items = InventoryItem.objects.all().order_by('name')
-        self.fields['sku'].widget = forms.Select(attrs={'class': 'form-control'})
-        self.fields['sku'].choices = [('', '---------')] + [
+        self.fields['sku'].widget = forms.Select(attrs={'class': 'form-control form-select'})
+        self.fields['sku'].choices = [('', '-- Select Product --')] + [
             (item.sku, f"{item.name} ({item.sku})") for item in items
         ]
         self.fields['quantity_produced'].help_text = "Enter units produced. Leave blank to auto-calculate from litres."
         self.fields['liters_used'].help_text = "Enter litres consumed. Leave blank to auto-calculate from units."
+        self.fields['source_tank'].help_text = "Select the tank from which milk will be drawn."
+        self.fields['product_type'].help_text = "Type of product being produced."
 
     def clean(self):
         cleaned_data = super().clean()

@@ -67,6 +67,11 @@
       <div style="margin-top:12px;">
         <label><strong>Quantity to Move:</strong></label>
         {{ form.storage_quantity }} {{ form.storage_quantity.errors }}
+        <div style="margin-top:6px;">
+          <label><strong>Or enter packets (preferred):</strong></label>
+          {{ form.storage_quantity_packets }} {{ form.storage_quantity_packets.errors }}
+          <small class="text-muted d-block">If both are provided, packet count will be used.</small>
+        </div>
       </div>
 
       <div style="margin-top:12px;">

@@ -1,0 +1,30 @@
+{% extends 'base.html' %}
+
+{% block content %}
+  <div class="container">
+    <h1>Seller Product Report</h1>
+    {% if report %}
+      <table class="table table-striped">
+        <thead>
+          <tr>
+            <th>Seller</th>
+            <th>Product</th>
+            <th class="text-end">Total Quantity</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in report %}
+            <tr>
+              <td>{{ row.seller__name }}</td>
+              <td>{{ row.product__name }}</td>
+              <td class="text-end">{{ row.total }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    {% else %}
+      <p>No data available for this report.</p>
+    {% endif %}
+    <a class="btn btn-secondary mt-3" href="{% url 'seller_list' %}">Back to sellers</a>
+  </div>
+{% endblock %}

@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load static %}
 {% block extra_css %}
 <style>
   .ascii-receipt {
@@ -115,10 +116,32 @@
         {% for item in line_items %}
         <div class="ascii-table-row">
           <span>{{ item.inventory_item.name }}</span>
-          <span>{{ item.quantity }}{% if item.inventory_item.unit %}&nbsp;{{ item.inventory_item.unit }}{% endif %}</span>
-          <span>KSh {{ item.price_per_unit|floatformat:2 }}</span>
+          <span>{{ item.display_qty }}{% if item.inventory_item.unit %}&nbsp;{{ item.inventory_item.unit }}{% endif %}</span>
+          <span>
+            {% if item.bulk_applied %}
+              KSh {{ item.bulk_price_per_carton|floatformat:2 }} / carton
+            {% else %}
+              KSh {{ item.price_per_unit|floatformat:2 }}
+            {% endif %}
+          </span>
           <span>KSh {{ item.line_total|floatformat:2 }}</span>
         </div>
+        {% if item.cartons or item.loose_units %}
+        <div class="ascii-table-row text-muted" style="font-size:0.85rem;">
+          <span></span>
+          <span>Breakdown: {{ item.display_qty }}</span>
+          <span></span>
+          <span></span>
+        </div>
+        {% endif %}
+        {% if item.discount and item.discount > 0 %}
+        <div class="ascii-table-row text-danger" style="font-size:0.95rem;">
+          <span>Bulk discount:</span>
+          <span></span>
+          <span></span>
+          <span>-KSh {{ item.discount|floatformat:2 }}</span>
+        </div>
+        {% endif %}
         {% empty %}
         <p class="text-muted">No line items recorded.</p>
         {% endfor %}

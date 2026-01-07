@@ -18,6 +18,13 @@ from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib import admin
 from django.urls import include, path
+from django.shortcuts import render
+
+# Custom error handlers
+def custom_permission_denied_view(request, exception=None):
+    return render(request, '403.html', status=403)
+
+handler403 = custom_permission_denied_view
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -26,6 +33,7 @@ urlpatterns = [
     path('production/', include('production.urls')),
     path('inventory/', include('inventory.urls')),
     path('sales/', include('sales.urls')),
+    path('sellers/', include('sellers.urls')),
     path('customers/', include('customers.urls')),
     path('suppliers/', include('suppliers.urls')),
     path('reports/', include('reports.urls')),

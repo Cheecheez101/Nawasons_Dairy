@@ -2,3 +2,4 @@ openpyxl
 reportlab
 Pillow
 celery>=5.3,<6
+django-environ

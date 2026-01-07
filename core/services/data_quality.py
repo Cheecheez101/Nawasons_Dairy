@@ -11,6 +11,7 @@ from core.models import DataQualityAlert
 from inventory.models import InventoryItem
 from sales.models import SalesTransaction
 from storage.models import ColdStorageInventory, StorageLocation
+from storage.models import Packaging
 
 LINE_TOTAL_EXPR = ExpressionWrapper(
     F("items__quantity") * F("items__price_per_unit"),
@@ -116,7 +117,11 @@ def _check_sales_totals() -> Set[str]:
 
 def _check_storage_capacity() -> Set[str]:
     codes: Set[str] = set()
-    locations = StorageLocation.objects.annotate(on_hand=Sum('inventory__quantity'))
+    total_units_expr = ExpressionWrapper(
+        F('inventory__cartons') * F('inventory__packaging__packets_per_carton') + F('inventory__loose_units'),
+        output_field=DecimalField(max_digits=12, decimal_places=2),
+    )
+    locations = StorageLocation.objects.annotate(on_hand=Sum(total_units_expr))
     for location in locations:
         capacity = location.capacity or Decimal('0')
         on_hand = location.on_hand or Decimal('0')
@@ -141,14 +146,17 @@ def _check_storage_expiry() -> Set[str]:
     today = timezone.now().date()
     near_cutoff = today + timedelta(days=3)
 
-    expired_lots = ColdStorageInventory.objects.select_related('location').filter(expiry_date__lt=today)
+    expired_lots = ColdStorageInventory.objects.select_related('location', 'packaging', 'production_batch').filter(expiry_date__lt=today)
     for lot in expired_lots:
+        product_name = str(lot.packaging) if getattr(lot, 'packaging', None) else (
+            lot.production_batch.get_product_type_display() if getattr(lot, 'production_batch', None) else 'Unknown product'
+        )
         code = f"storage-expired-{lot.pk}"
         _upsert_alert(
             code,
             category="Storage",
             message=(
-                f"{lot.product} in {lot.location.name} expired on {lot.expiry_date}."
+                f"{product_name} in {lot.location.name} expired on {lot.expiry_date}."
             ),
             severity="critical",
             model_label="storage.ColdStorageInventory",
@@ -158,16 +166,19 @@ def _check_storage_expiry() -> Set[str]:
 
     near_expiry_lots = (
         ColdStorageInventory.objects
-        .select_related('location')
+        .select_related('location', 'packaging', 'production_batch')
         .filter(expiry_date__gte=today, expiry_date__lte=near_cutoff)
     )
     for lot in near_expiry_lots:
+        product_name = str(lot.packaging) if getattr(lot, 'packaging', None) else (
+            lot.production_batch.get_product_type_display() if getattr(lot, 'production_batch', None) else 'Unknown product'
+        )
         code = f"storage-near-expiry-{lot.pk}"
         _upsert_alert(
             code,
             category="Storage",
             message=(
-                f"{lot.product} in {lot.location.name} expires on {lot.expiry_date}."
+                f"{product_name} in {lot.location.name} expires on {lot.expiry_date}."
             ),
             severity="warning",
             model_label="storage.ColdStorageInventory",
@@ -220,13 +231,21 @@ def _resolve_inactive_alerts(active_codes: Set[str]) -> None:
 
 def _build_storage_snapshot() -> StorageSnapshot:
     snapshot: StorageSnapshot = {}
-    lots = ColdStorageInventory.objects.values("production_batch_id", "quantity", "expiry_date")
+    # Build a mapping of packaging_id -> packets_per_carton for quick lookup
+    packaging_map = {p.id: p.packets_per_carton for p in Packaging.objects.all()}
+    lots = ColdStorageInventory.objects.values("production_batch_id", "cartons", "loose_units", "packaging_id", "expiry_date")
     for lot in lots:
         batch_id = lot["production_batch_id"]
         if not batch_id:
             continue
+        cartons = int(lot.get("cartons") or 0)
+        loose = int(lot.get("loose_units") or 0)
+        pkg_id = lot.get("packaging_id")
+        per_carton = packaging_map.get(pkg_id) if pkg_id else None
+        total = cartons * per_carton + loose if per_carton else loose
+
         entry = snapshot.setdefault(batch_id, {"quantity": Decimal("0"), "expiry": None})
-        entry["quantity"] += Decimal(lot["quantity"]) if lot["quantity"] is not None else Decimal("0")
+        entry["quantity"] += Decimal(total)
         expiry = lot["expiry_date"]
         if expiry and (entry["expiry"] is None or expiry < entry["expiry"]):
             entry["expiry"] = expiry

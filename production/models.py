@@ -48,6 +48,8 @@ class ProductPrice(models.Model):
     sku = models.CharField(max_length=30, unique=True)
     product_name = models.CharField(max_length=120)
     price = models.DecimalField(max_digits=10, decimal_places=2)
+    # Optional bulk price when customers buy full cartons
+    bulk_price_per_carton = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     last_updated = models.DateTimeField(auto_now=True)
     updated_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,
@@ -118,6 +120,7 @@ class ProductionBatch(models.Model):
 
     PRODUCT_CHOICES = [
         ('atm', 'Fresh Milk ATM'),
+        ('raw', 'Raw Milk (Bulk)'),
         ('esl', 'ESL Milk'),
         ('yogurt', 'Yogurt'),
         ('mala', 'Mala'),

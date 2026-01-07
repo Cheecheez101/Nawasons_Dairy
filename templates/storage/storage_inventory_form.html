@@ -28,5 +28,58 @@
       <button type="submit" class="btn btn-primary">Save</button>
     </div>
   </form>
+  {% if debug_batch %}
+  <div class="mt-3 small text-muted">
+    <strong>Debug:</strong>
+    <div>Batch: {{ debug_batch.batch_id }} (SKU: {{ debug_batch.sku }})</div>
+    <div>Batch quantity_produced: {{ debug_batch.quantity_produced }}</div>
+    <div>Batch liters_used: {{ debug_batch.liters_used }}</div>
+    <div>Existing lot total units: {{ lot_total_units }}</div>
+  </div>
+  {% endif %}
 </div>
+{% if packaging_map_json %}
+<script>
+  (function(){
+    const packagingMap = JSON.parse('{{ packaging_map_json|safe }}');
+    const sel = document.querySelector('select[name="packaging"]');
+    const totalInput = document.getElementById('id_total_units');
+    const cartonsInput = document.getElementById('id_cartons');
+    const looseInput = document.getElementById('id_loose_units');
+
+    function getPerCarton(){
+      if(!sel) return null;
+      return packagingMap[sel.value] ? parseInt(packagingMap[sel.value], 10) : null;
+    }
+
+    function fromTotal(){
+      const per = getPerCarton();
+      const total = totalInput && parseInt(totalInput.value || 0, 10);
+      if(per && !isNaN(total)){
+        const c = Math.floor(total / per);
+        const l = total % per;
+        if(cartonsInput) cartonsInput.value = c;
+        if(looseInput) looseInput.value = l;
+      }
+    }
+
+    function fromCartonsLoose(){
+      const per = getPerCarton();
+      if(!per) return;
+      const c = cartonsInput && parseInt(cartonsInput.value || 0, 10);
+      const l = looseInput && parseInt(looseInput.value || 0, 10);
+      if(!isNaN(c) && !isNaN(l) && totalInput) totalInput.value = (c * per) + l;
+    }
+
+    if(totalInput){ totalInput.addEventListener('input', fromTotal); }
+    if(cartonsInput){ cartonsInput.addEventListener('input', fromCartonsLoose); }
+    if(looseInput){ looseInput.addEventListener('input', fromCartonsLoose); }
+    if(sel){ sel.addEventListener('change', function(){
+      // when packaging changes, recompute using whichever field has value
+      if(totalInput && totalInput.value) fromTotal(); else fromCartonsLoose();
+    }); }
+
+  })();
+</script>
+{% endif %}
 {% endblock %}

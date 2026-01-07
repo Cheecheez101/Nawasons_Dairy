@@ -44,15 +44,34 @@ def adjust_storage_for_inventory_item(inventory_item, quantity_delta):
         except ColdStorageInventory.DoesNotExist:
             return False
 
-        new_quantity = record.quantity + delta
-        if new_quantity <= 0:
+        # Work with total units (packets). Use record.total_units() where possible.
+        try:
+            current_total = int(record.total_units())
+        except Exception:
+            # Fallback: treat cartons as 0 and use loose_units
+            current_total = int(getattr(record, 'loose_units', 0) or 0)
+
+        new_total = current_total + int(delta)
+        if new_total <= 0:
             record.delete()
             return True
 
-        record.quantity = new_quantity
+        # If packaging known, split into cartons/loose_units; otherwise store as loose_units
+        try:
+            if record.packaging:
+                per_carton = record.packaging.packets_per_carton
+                record.cartons = new_total // per_carton
+                record.loose_units = new_total % per_carton
+            else:
+                record.cartons = 0
+                record.loose_units = new_total
+        except Exception:
+            record.cartons = 0
+            record.loose_units = new_total
+
         record.last_restocked = timezone.now()
         record.status = _status_for_expiry(record.expiry_date)
-        record.save(update_fields=["quantity", "last_restocked", "status"])
+        record.save(update_fields=["cartons", "loose_units", "last_restocked", "status"])
         return True
 
 
@@ -72,7 +91,10 @@ def aggregate_storage_by_sku() -> Dict[str, Decimal]:
             continue
         sku = getattr(batch, "sku", None)
         if sku:
-            totals[sku] += Decimal(lot.quantity or 0)
+            try:
+                totals[sku] += Decimal(lot.total_units() or 0)
+            except Exception:
+                totals[sku] += Decimal(getattr(lot, 'loose_units', 0) or 0)
     return totals
 
 
@@ -107,9 +129,18 @@ def reconcile_storage_records(dry_run: bool = True):
                 "storage_qty": storage_total,
             })
 
-    zero_lots = ColdStorageInventory.objects.filter(quantity__lte=0)
+    # Find lots with zero or negative total units
+    zero_lots = []
+    for lot in ColdStorageInventory.objects.all():
+        try:
+            total_units = lot.total_units()
+        except Exception:
+            total_units = getattr(lot, 'loose_units', 0) or 0
+        if total_units <= 0:
+            zero_lots.append(lot)
+
     if dry_run:
-        report["lots_removed"] = list(zero_lots.values_list("storage_id", flat=True))
+        report["lots_removed"] = [l.storage_id for l in zero_lots]
     else:
         for lot in zero_lots:
             report["lots_removed"].append(lot.storage_id)

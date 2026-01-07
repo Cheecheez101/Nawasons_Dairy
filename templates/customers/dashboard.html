@@ -5,10 +5,54 @@
     <h1 class="h3 mb-1">Customer Directory</h1>
     <p class="text-muted mb-0">Track loyalty insights and recent activity.</p>
   </div>
-  <a href="{% url 'customers:create' %}" class="btn btn-primary">
-    <i class="bi bi-person-plus me-1"></i> Add Customer
-  </a>
+  <div class="d-flex flex-wrap gap-2">
+    <a href="{% url 'customers:index' %}" class="btn btn-outline-secondary">
+      <i class="bi bi-arrow-counterclockwise me-1"></i> Reset
+    </a>
+    <a href="{% url 'customers:create' %}" class="btn btn-primary">
+      <i class="bi bi-person-plus me-1"></i> Add Customer
+    </a>
+  </div>
 </div>
+
+<!-- Filters -->
+<form method="get" class="card shadow-sm mb-4">
+  <div class="card-body">
+    <div class="row g-3 align-items-end">
+      <div class="col-md-4">
+        <label for="search" class="form-label">Search Customer</label>
+        <input type="text" id="search" name="q" class="form-control" 
+               placeholder="e.g. John Doe or 0712345678" 
+               value="{{ request.GET.q }}">
+      </div>
+      <div class="col-md-2">
+        <label for="min_points" class="form-label">Min Loyalty Points</label>
+        <input type="number" id="min_points" name="min_points" class="form-control" 
+               placeholder="e.g. 100" min="0"
+               value="{{ request.GET.min_points }}">
+      </div>
+      <div class="col-md-2">
+        <label for="min_spend" class="form-label">Min Total Spend</label>
+        <input type="number" id="min_spend" name="min_spend" class="form-control" 
+               placeholder="e.g. 5000" min="0" step="0.01"
+               value="{{ request.GET.min_spend }}">
+      </div>
+      <div class="col-md-2">
+        <label for="has_purchase" class="form-label">Purchase Status</label>
+        <select id="has_purchase" name="has_purchase" class="form-select">
+          <option value="">All Customers</option>
+          <option value="yes" {% if request.GET.has_purchase == 'yes' %}selected{% endif %}>Has Purchases</option>
+          <option value="no" {% if request.GET.has_purchase == 'no' %}selected{% endif %}>No Purchases</option>
+        </select>
+      </div>
+      <div class="col-md-2">
+        <button type="submit" class="btn btn-primary w-100">
+          <i class="bi bi-funnel me-1"></i> Filter
+        </button>
+      </div>
+    </div>
+  </div>
+</form>
 
 <div class="card shadow-sm">
   <div class="card-body p-0">

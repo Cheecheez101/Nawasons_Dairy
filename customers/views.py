@@ -2,7 +2,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.views import View
 from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
 from django.http import HttpResponse
-from django.db.models import Sum, Max
+from django.db.models import Sum, Max, Q
 from .models import Customer
 from .forms import CustomerForm, LoyaltyAdjustmentForm
 
@@ -14,6 +14,34 @@ class CustomerDashboardView(LoginRequiredMixin, PermissionRequiredMixin, View):
             total_spend=Sum('sales__total_amount'),
             last_purchase=Max('sales__created_at')
         )
+        
+        # Apply filters
+        search = request.GET.get('q', '').strip()
+        if search:
+            customers = customers.filter(
+                Q(name__icontains=search) | Q(phone__icontains=search)
+            )
+        
+        min_points = request.GET.get('min_points', '').strip()
+        if min_points:
+            try:
+                customers = customers.filter(loyalty_points__gte=int(min_points))
+            except (ValueError, TypeError):
+                pass
+        
+        min_spend = request.GET.get('min_spend', '').strip()
+        if min_spend:
+            try:
+                customers = customers.filter(total_spend__gte=float(min_spend))
+            except (ValueError, TypeError):
+                pass
+        
+        has_purchase = request.GET.get('has_purchase', '').strip()
+        if has_purchase == 'yes':
+            customers = customers.filter(last_purchase__isnull=False)
+        elif has_purchase == 'no':
+            customers = customers.filter(last_purchase__isnull=True)
+        
         return render(request, 'customers/dashboard.html', {'customers': customers})
 
 class CustomerCreateView(LoginRequiredMixin, PermissionRequiredMixin, View):

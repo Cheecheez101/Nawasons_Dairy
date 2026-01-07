@@ -1,0 +1,30 @@
+{% extends 'base.html' %}
+
+{% block content %}
+  <div class="container">
+    <h1>Combined Inventory Impact</h1>
+    {% if combined %}
+      <table class="table table-striped">
+        <thead>
+          <tr>
+            <th>Product</th>
+            <th class="text-end">Sales</th>
+            <th class="text-end">Sellers</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in combined %}
+            <tr>
+              <td>{{ row.product }}</td>
+              <td class="text-end">{{ row.sales }}</td>
+              <td class="text-end">{{ row.sellers }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    {% else %}
+      <p>No data available for combined inventory impact.</p>
+    {% endif %}
+    <a class="btn btn-secondary mt-3" href="{% url 'seller_list' %}">Back to sellers</a>
+  </div>
+{% endblock %}

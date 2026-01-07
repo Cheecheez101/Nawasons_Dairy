@@ -2,6 +2,7 @@ from datetime import timedelta
 
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
+from django.db.models import Q
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.views import View
@@ -64,6 +65,21 @@ class SupplierManageView(LoginRequiredMixin, PermissionRequiredMixin, View):
 
     def _render_page(self, request, create_form=None):
         suppliers = Supplier.objects.order_by('name')
+        
+        # Apply filters
+        search = request.GET.get('q', '').strip()
+        if search:
+            suppliers = suppliers.filter(
+                Q(name__icontains=search) | Q(contact_person__icontains=search) | Q(phone__icontains=search)
+            )
+        
+        max_lead_time = request.GET.get('max_lead_time', '').strip()
+        if max_lead_time:
+            try:
+                suppliers = suppliers.filter(lead_time_days__lte=int(max_lead_time))
+            except (ValueError, TypeError):
+                pass
+        
         context = {
             'suppliers': suppliers,
             'create_form': create_form or SupplierForm(),

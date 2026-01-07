@@ -42,6 +42,14 @@ class UserCreateForm(UserCreationForm):
             else:
                 widget.attrs.setdefault("class", "form-control")
 
+    def clean_username(self):
+        username = self.cleaned_data.get("username")
+        if username and User.objects.filter(username__iexact=username).exists():
+            raise forms.ValidationError(
+                f"A user with the username '{username}' already exists. Please choose a different username."
+            )
+        return username
+
     def save(self, commit=True):
         user = super().save(commit=False)
         user.email = self.cleaned_data.get("email")

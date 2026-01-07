@@ -14,38 +14,100 @@
   </div>
 
   <div class="card shadow-sm mb-4">
-    <div class="card-header bg-white">
+    <div class="card-header bg-white d-flex justify-content-between align-items-center flex-wrap gap-2">
       <h2 class="h5 mb-0">Cow overview</h2>
+      <span class="badge bg-secondary">{{ cows|length }} registered</span>
     </div>
+    
+    <!-- Cow Filters -->
+    <div class="card-body border-bottom bg-light">
+      <form method="get" class="row g-2 align-items-end">
+        <div class="col-md-3">
+          <label for="cow_search" class="form-label small text-muted">Search Cow</label>
+          <input type="text" id="cow_search" name="cow_q" class="form-control form-control-sm" 
+                 placeholder="e.g. Daisy or COW-001" 
+                 value="{{ request.GET.cow_q }}">
+        </div>
+        <div class="col-md-2">
+          <label for="breed" class="form-label small text-muted">Breed</label>
+          <select id="breed" name="breed" class="form-select form-select-sm">
+            <option value="">All Breeds</option>
+            <option value="friesian" {% if request.GET.breed == 'friesian' %}selected{% endif %}>Friesian</option>
+            <option value="jersey" {% if request.GET.breed == 'jersey' %}selected{% endif %}>Jersey</option>
+            <option value="ayrshire" {% if request.GET.breed == 'ayrshire' %}selected{% endif %}>Ayrshire</option>
+            <option value="guernsey" {% if request.GET.breed == 'guernsey' %}selected{% endif %}>Guernsey</option>
+            <option value="sahiwal" {% if request.GET.breed == 'sahiwal' %}selected{% endif %}>Sahiwal</option>
+            <option value="brown_swiss" {% if request.GET.breed == 'brown_swiss' %}selected{% endif %}>Brown Swiss</option>
+            <option value="holstein" {% if request.GET.breed == 'holstein' %}selected{% endif %}>Holstein</option>
+            <option value="crossbreed" {% if request.GET.breed == 'crossbreed' %}selected{% endif %}>Crossbreed</option>
+          </select>
+        </div>
+        <div class="col-md-2">
+          <label for="health" class="form-label small text-muted">Health Status</label>
+          <select id="health" name="health" class="form-select form-select-sm">
+            <option value="">All</option>
+            <option value="healthy" {% if request.GET.health == 'healthy' %}selected{% endif %}>Healthy</option>
+            <option value="monitor" {% if request.GET.health == 'monitor' %}selected{% endif %}>Monitor</option>
+            <option value="sick" {% if request.GET.health == 'sick' %}selected{% endif %}>Needs Attention</option>
+          </select>
+        </div>
+        <div class="col-md-2">
+          <label for="active_status" class="form-label small text-muted">Status</label>
+          <select id="active_status" name="is_active" class="form-select form-select-sm">
+            <option value="">All Cows</option>
+            <option value="1" {% if request.GET.is_active == '1' %}selected{% endif %}>Active Only</option>
+            <option value="0" {% if request.GET.is_active == '0' %}selected{% endif %}>Inactive Only</option>
+          </select>
+        </div>
+        <div class="col-md-3 d-flex gap-2">
+          <button type="submit" class="btn btn-primary btn-sm flex-grow-1">
+            <i class="bi bi-funnel me-1"></i> Filter
+          </button>
+          <a href="{% url 'production:cow_list' %}" class="btn btn-outline-secondary btn-sm">Reset</a>
+        </div>
+      </form>
+    </div>
+    
     <div class="card-body p-0">
       <div class="table-responsive">
         <table class="table table-striped align-middle mb-0">
           <thead class="table-light">
             <tr>
+              <th>Cow ID</th>
               <th>Cow name</th>
               <th>Breed</th>
               <th>Health</th>
-              <th>Latest yield (L)</th>
+              <th>Today's yield (L)</th>
+              <th class="text-end">Actions</th>
             </tr>
           </thead>
           <tbody>
             {% for cow in cows %}
-            <tr class="{% if cow.latest_yield and cow.latest_yield.storage_level_percentage > 90 %}table-warning{% endif %}">
+            <tr>
+              <td><code>{{ cow.cow_id }}</code></td>
               <td>{{ cow.name }}</td>
               <td>{{ cow.breed }}</td>
               <td>{{ cow.get_health_status_display }}</td>
               <td>
-                {% if cow.latest_yield %}
-                  {{ cow.latest_yield.total_yield }} L
-                  <small class="text-muted">(Storage {{ cow.latest_yield.storage_level_percentage }}%)</small>
+                {% if cow.today_yield %}
+                  {{ cow.today_yield|floatformat:2 }} L
                 {% else %}
-                  <span class="text-muted">—</span>
+                  <span class="text-muted">0.00 L</span>
                 {% endif %}
+              </td>
+              <td class="text-end">
+                <div class="d-flex justify-content-end gap-2">
+                  <a class="btn btn-sm btn-outline-primary" href="{% url 'production:cow_edit' cow.pk %}">Edit</a>
+                  <form method="post" action="{% url 'production:cow_delete' cow.pk %}" onsubmit="return confirm('Delete cow {{ cow.name|default:cow.cow_id }}? This will also delete all associated milk yields.');">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
+                  </form>
+                </div>
               </td>
             </tr>
             {% empty %}
             <tr>
-              <td colspan="4" class="text-center text-muted py-4">No cows registered yet.</td>
+              <td colspan="6" class="text-center text-muted py-4">No cows registered yet.</td>
             </tr>
             {% endfor %}
           </tbody>

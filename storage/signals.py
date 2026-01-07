@@ -1,7 +1,7 @@
 """Auto-sync InventoryItem whenever ColdStorageInventory changes."""
 from decimal import Decimal
 
-from django.db.models import Sum
+from django.db.models import Sum, F, ExpressionWrapper, DecimalField
 from django.db.models.signals import post_save, post_delete
 from django.dispatch import receiver
 from django.utils import timezone
@@ -17,10 +17,15 @@ def _sync_inventory_for_sku(sku, latest_batch=None, reason="Storage auto-sync"):
         return
 
     # Sum all storage lots for this SKU (across all batches with the same SKU)
+    # Sum total packets for this SKU across all storage lots: cartons * packets_per_carton + loose_units
+    total_units_expr = ExpressionWrapper(
+        F('cartons') * F('packaging__packets_per_carton') + F('loose_units'),
+        output_field=DecimalField(max_digits=12, decimal_places=2),
+    )
     storage_total = (
         ColdStorageInventory.objects
         .filter(production_batch__sku=sku)
-        .aggregate(total=Sum("quantity"))
+        .aggregate(total=Sum(total_units_expr))
     )["total"] or Decimal("0")
 
     # Get earliest expiry among lots for this SKU

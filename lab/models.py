@@ -49,6 +49,13 @@ class MilkYield(models.Model):
 	}
 
 	cow = models.ForeignKey("production.Cow", on_delete=models.CASCADE, related_name="yields")
+	recorded_by = models.ForeignKey(
+		settings.AUTH_USER_MODEL,
+		on_delete=models.SET_NULL,
+		null=True,
+		blank=True,
+		related_name="milk_yields_recorded",
+	)
 	recorded_at = models.DateTimeField(auto_now_add=True)
 	session = models.CharField(max_length=20, choices=SESSION_CHOICES, default="morning")
 	collection_window_start = models.DateTimeField(null=True, blank=True, editable=False)

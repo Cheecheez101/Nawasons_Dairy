@@ -1,0 +1,12 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container py-4">
+  <h2>{{ package.product.name }} Packaging</h2>
+  <div class="card shadow-sm p-3">
+    <p><strong>Pack size:</strong> {{ package.pack_size_ml }} ml</p>
+    <p><strong>Packets per carton:</strong> {{ package.packets_per_carton }}</p>
+    <p><strong>Example:</strong> 1 carton = {{ package.packets_per_carton }} units</p>
+    <a href="{% url 'storage:packaging_list' %}" class="btn btn-outline-secondary">Back to list</a>
+  </div>
+</div>
+{% endblock %}

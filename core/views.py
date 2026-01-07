@@ -7,15 +7,14 @@ from django.contrib.auth import update_session_auth_hash
 from django.contrib.auth.decorators import login_required, permission_required
 from django.contrib.auth.forms import AdminPasswordChangeForm, PasswordChangeForm
 from django.contrib.auth.models import Group, Permission, User
-from django.db.models import DecimalField, ExpressionWrapper, F, Sum
+from django.db.models import DecimalField, ExpressionWrapper, F, Q, Sum
 from django.db.models.functions import TruncMonth
-from django.db.utils import OperationalError
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 
 from customers.models import Customer
-from production.models import Cow, MilkYield
+from production.models import Cow, MilkYield, ProductionBatch
 from sales.models import SalesItem, SalesTransaction
 from storage.models import ColdStorageInventory, StorageLocation
 
@@ -31,7 +30,6 @@ from .forms import (
 )
 from .models import DataQualityAlert, UserProfile
 from .services import run_data_quality_checks
-from .roles import ROLE_CONFIG
 
 
 @login_required
@@ -57,9 +55,18 @@ def _build_dashboard_metrics():
     alerts = list(run_data_quality_checks())
 
     latest_yields = MilkYield.objects.select_related('cow')[:5]
-    milk_today_total = MilkYield.objects.filter(recorded_at__date=today).aggregate(
+    milk_today_remaining = MilkYield.objects.filter(recorded_at__date=today).aggregate(
         total=Sum('yield_litres')
     )['total'] or Decimal('0')
+    
+    # Get milk used for production today
+    production_today = ProductionBatch.objects.filter(produced_at__date=today).aggregate(
+        total=Sum('liters_used')
+    )['total'] or Decimal('0')
+    
+    # Total milk collected today = remaining + what was used for production
+    milk_today_total = milk_today_remaining + production_today
+    
     active_herd_count = Cow.objects.filter(is_active=True).count()
     customers_today = Customer.objects.filter(created_at__date=today).count()
 
@@ -72,6 +79,8 @@ def _build_dashboard_metrics():
     context = {
         'latest_yields': latest_yields,
         'milk_collected_today': milk_today_total,
+        'milk_used_production_today': production_today,
+        'milk_remaining_today': milk_today_remaining,
         'active_herd_count': active_herd_count,
         'customers_today': customers_today,
         'today': today,
@@ -99,7 +108,8 @@ def _build_yield_context(now):
             chart_year = latest_year
             yield_qs = MilkYield.objects.filter(recorded_at__year=chart_year)
 
-    monthly_output_data = [0] * 12
+    # Get remaining milk yields by month
+    monthly_output_data = [Decimal('0')] * 12
     monthly_totals = (
         yield_qs
         .annotate(month=TruncMonth('recorded_at'))
@@ -110,7 +120,24 @@ def _build_yield_context(now):
         month = entry['month']
         if month:
             month_index = month.month - 1
-            monthly_output_data[month_index] = float(entry['total'] or 0)
+            monthly_output_data[month_index] = Decimal(entry['total'] or 0)
+
+    # Add back milk used for production (since consume_milk reduces yield_litres)
+    production_qs = ProductionBatch.objects.filter(produced_at__year=chart_year)
+    monthly_production = (
+        production_qs
+        .annotate(month=TruncMonth('produced_at'))
+        .values('month')
+        .annotate(total=Sum('liters_used'))
+    )
+    for entry in monthly_production:
+        month = entry['month']
+        if month:
+            month_index = month.month - 1
+            monthly_output_data[month_index] += Decimal(entry['total'] or 0)
+
+    # Convert to float for JSON serialization
+    monthly_output_data = [float(val) for val in monthly_output_data]
 
     return {
         'monthly_output_data': monthly_output_data,
@@ -191,7 +218,12 @@ def _build_profitability_context(now):
 
 def _build_storage_context(now):
     total_capacity = StorageLocation.objects.aggregate(total=Sum('capacity'))['total'] or Decimal('0')
-    total_on_hand = ColdStorageInventory.objects.aggregate(total=Sum('quantity'))['total'] or Decimal('0')
+    # Sum total packets on hand: cartons * packets_per_carton + loose_units
+    total_units_expr = ExpressionWrapper(
+        F('cartons') * F('packaging__packets_per_carton') + F('loose_units'),
+        output_field=DecimalField(max_digits=12, decimal_places=2),
+    )
+    total_on_hand = ColdStorageInventory.objects.aggregate(total=Sum(total_units_expr))['total'] or Decimal('0')
 
     if not isinstance(total_capacity, Decimal):
         total_capacity = Decimal(total_capacity)
@@ -435,16 +467,9 @@ def profile_settings(request):
     return render(request, 'core/profile_settings.html', context)
 
 
-def seed_roles():
-    try:
-        for role_name, config in ROLE_CONFIG.items():
-            group, _ = Group.objects.get_or_create(name=role_name)
-            perms = Permission.objects.filter(codename__in=[perm.split('.')[-1] for perm in config['permissions']])
-            group.permissions.set(perms)
-    except OperationalError:
-        pass
-
-seed_roles()
+# NOTE: seed_roles() has been removed from automatic execution.
+# Group permissions are now managed exclusively through Django Admin.
+# To seed initial roles, run: python manage.py seed_roles
 
 
 FALLBACK_ROUTES = [

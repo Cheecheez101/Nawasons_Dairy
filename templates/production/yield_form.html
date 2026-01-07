@@ -3,15 +3,34 @@
 <div class="container py-4">
   <div class="form-shell">
     <div class="card shadow-sm">
-      <div class="card-header bg-light">
-        <h1 class="h4 mb-0">Record Milk Yield</h1>
+      <div class="card-header bg-light d-flex justify-content-between align-items-center">
+        <h1 class="h4 mb-0">{% if yield_entry %}Edit Milk Yield{% else %}Record Milk Yield{% endif %}</h1>
+        {% if yield_entry %}
+        <span class="badge bg-secondary">{{ yield_entry.cow.name|default:yield_entry.cow.cow_id }}</span>
+        {% endif %}
       </div>
       <div class="card-body">
+        {% if messages %}
+        <div class="mb-3">
+          {% for message in messages %}
+          <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+          </div>
+          {% endfor %}
+        </div>
+        {% endif %}
+        
         <form method="post" class="form-styled">
           {% csrf_token %}
           {% include "partials/form_fields.html" with form=form %}
-          <div class="d-flex justify-content-end gap-2">
-            <button type="submit" class="btn btn-primary">Save</button>
+          <div class="d-flex justify-content-between gap-2 mt-3">
+            <a href="{% url 'production:cow_list' %}" class="btn btn-outline-secondary">
+              {% if yield_entry %}Cancel{% else %}Done Recording{% endif %}
+            </a>
+            <button type="submit" class="btn btn-primary">
+              {% if yield_entry %}Update Yield{% else %}Save & Record Another{% endif %}
+            </button>
           </div>
         </form>
       </div>

@@ -3,6 +3,18 @@
 
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/reports_dashboard.css' %}">
+<style>
+  .status-critical {
+    background: #ffeaea !important;
+    color: #b30000 !important;
+    font-weight: bold;
+  }
+  .status-chip.status-critical {
+    background: #ffcccc !important;
+    color: #b30000 !important;
+    border: 1px solid #b30000;
+  }
+</style>
 {% endblock %}
 
 {% block content %}
@@ -381,7 +393,7 @@
               <tbody>
                 {% for row in inventory_reports.stock %}
                 {% with status=row.status|default:'good' %}
-                <tr>
+                <tr class="{% if status == 'critical' %}status-critical{% endif %}">
                   <td>{{ row.item|default:'Raw Milk' }}</td>
                   <td>{{ row.qty|default:'0' }}</td>
                   <td>{{ row.unit|default:'L' }}</td>

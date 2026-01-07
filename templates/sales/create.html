@@ -1,6 +1,18 @@
 {% extends 'base.html' %}
 {% block content %}
 <div class="container py-4">
+  {% if messages %}
+  <div class="mb-3">
+    {% for message in messages %}
+    <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+      <i class="fas fa-{% if message.tags == 'error' %}exclamation-circle{% elif message.tags == 'warning' %}exclamation-triangle{% else %}info-circle{% endif %} me-2"></i>
+      {{ message }}
+      <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+  
   <div class="row g-4">
     <div class="col-lg-8">
       <div class="card shadow-sm h-100">
@@ -53,3 +65,93 @@
   </div>
 </div>
 {% endblock %}
+{% if packaging_map_json or product_price_map_json %}
+<script>
+  (function(){
+    const packagingMap = {{ packaging_map_json|default:'{}'|safe }};
+    const priceMap = {{ product_price_map_json|default:'{}'|safe }};
+    console.debug('packagingMap', packagingMap);
+    console.debug('priceMap', priceMap);
+
+    function perCartonForItem(itemId){
+      return packagingMap[itemId] ? parseInt(packagingMap[itemId], 10) : null;
+    }
+
+    function bulkPriceForItem(itemId){
+      return priceMap[itemId] ? parseFloat(priceMap[itemId]) : null;
+    }
+
+    // For each formset item, wire up listeners
+    const formsets = document.querySelectorAll('.form-styled form');
+    // Fallback: find management form count and iterate formset fields by index
+    const totalFormsInput = document.querySelector('input[name="form-TOTAL_FORMS"]');
+    const totalForms = totalFormsInput ? parseInt(totalFormsInput.value, 10) : 0;
+
+      for(let i=0;i<totalForms;i++){
+      const inventorySelect = document.querySelector(`[name="form-${i}-inventory_item"]`);
+      const quantityInput = document.querySelector(`[name="form-${i}-quantity"]`);
+      const cartonsInput = document.querySelector(`[name="form-${i}-cartons"]`);
+      const looseInput = document.querySelector(`[name="form-${i}-loose_units"]`);
+      const bulkPriceInput = document.querySelector(`[name="form-${i}-bulk_price_per_carton"]`);
+      // create or find a small hint element to show equivalent cartons
+      let hintEl = document.querySelector(`#form-${i}-equiv-cartons`);
+      if(!hintEl){
+        hintEl = document.createElement('div');
+        hintEl.id = `form-${i}-equiv-cartons`;
+        hintEl.className = 'small text-info mt-1';
+        if(quantityInput && quantityInput.parentNode){
+          quantityInput.parentNode.appendChild(hintEl);
+        }
+      }
+
+      function recomputeFromQuantity(){
+        if(!inventorySelect) return;
+        const itemId = inventorySelect.value;
+        console.debug(`row ${i} selected item`, itemId);
+        if(!itemId) return;
+        const per = perCartonForItem(itemId);
+        console.debug(`row ${i} perCarton`, per);
+        const q = quantityInput && quantityInput.value ? parseInt(quantityInput.value, 10) : 0;
+        console.debug(`row ${i} qty`, q);
+        if(per && !isNaN(q)){
+          const c = Math.floor(q / per);
+          const l = q % per;
+          console.debug(`row ${i} cartons=${c} loose=${l}`);
+          if(cartonsInput) cartonsInput.value = c;
+          if(looseInput) looseInput.value = l;
+          const bp = bulkPriceForItem(itemId);
+          if(bulkPriceInput && bp !== null) bulkPriceInput.value = bp;
+          // Show equivalent cartons when exact multiple
+          if(hintEl){
+            if(l === 0 && q > 0){
+              hintEl.textContent = `Equivalent: ${c} carton(s)`;
+            } else {
+              hintEl.textContent = '';
+            }
+          }
+        } else {
+          console.debug(`row ${i} cannot compute cartons (per=${per} q=${q})`);
+          // unknown packaging -> clear cartons/loose
+          if(cartonsInput) cartonsInput.value = 0;
+          if(looseInput) looseInput.value = q || 0;
+          const bp = bulkPriceForItem(itemId);
+          if(bulkPriceInput && bp !== null) bulkPriceInput.value = bp;
+          if(hintEl) hintEl.textContent = '';
+        }
+      }
+
+      if(inventorySelect){
+        inventorySelect.addEventListener('change', function(){
+          // when product selected, attempt to fill bulk price and recompute
+          const bp = bulkPriceForItem(this.value);
+          if(bulkPriceInput && bp !== null) bulkPriceInput.value = bp;
+          recomputeFromQuantity();
+        });
+      }
+      if(quantityInput){
+        quantityInput.addEventListener('input', recomputeFromQuantity);
+      }
+    }
+  })();
+</script>
+{% endif %}
