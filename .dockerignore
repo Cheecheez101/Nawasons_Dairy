@@ -1,0 +1,33 @@
+# Python artifacts
+__pycache__/
+*.py[cod]
+*.sqlite3
+
+# Virtualenv
+.venv/
+venv/
+ENV/
+
+# Distribution / packaging
+build/
+dist/
+*.egg-info/
+
+# Environment
+.env
+.env.*
+
+# Django media and static
+media/
+staticfiles/
+
+# Git
+.git/
+
+# Node
+node_modules/
+
+# Ignore local IDE files
+.vscode/
+.idea/
+

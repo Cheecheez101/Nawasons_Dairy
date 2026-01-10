@@ -3,3 +3,9 @@ reportlab
 Pillow
 celery>=5.3,<6
 django-environ
+
+# Production / runtime
+Django>=5.0
+gunicorn
+psycopg2-binary
+whitenoise

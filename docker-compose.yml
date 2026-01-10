@@ -1,0 +1,25 @@
+services:
+  web:
+    build: .
+    command: gunicorn --bind 0.0.0.0:8000 nawasons_dairy.wsgi:application
+    ports:
+      - "8000:8000"
+    volumes:
+      - .:/app
+    env_file:
+      - .env
+    depends_on:
+      - db
+
+  db:
+    image: postgres:15
+    environment:
+      POSTGRES_PASSWORD: supersecurepassword
+      POSTGRES_USER: nawasons_user
+      POSTGRES_DB: nawasons_db
+    volumes:
+      - db_data:/var/lib/postgresql/data
+
+volumes:
+  db_data:
+    name: db_data
